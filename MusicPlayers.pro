@@ -1,4 +1,4 @@
-QT       += core gui sql
+QT       += core gui sql multimedia
 QT       += sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -19,11 +19,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     main.cpp \
     mainwindow.cpp\
-    mybtn.cpp
+    mybtn.cpp\
+    mylab.cpp
 
 HEADERS += \
     mainwindow.h\
-    mybtn.h
+    mybtn.h\
+    mylab.h
 
 FORMS += \
     mainwindow.ui
@@ -35,3 +37,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     res.qrc
+
+CONFIG += resources_big

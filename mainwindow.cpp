@@ -2,7 +2,7 @@
 #include "ui_mainwindow.h"
 #include<QDebug>
 #include <QHBoxLayout>
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
@@ -14,23 +14,27 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     db.open();  //打开数据库
     // 以上关于mysql的初始化
 
-
     QHBoxLayout * hlay = new QHBoxLayout();    //设置minb maxb clsb 的水平布局让其对于窗口的相对位置不会改变
     int x = 1300, y = 850;  //记录初始的宽和高
     this ->resize(x, y);   // 设置主界面的宽高
     setWindowFlag(Qt::FramelessWindowHint);  // 删除以前的 最大化 最小化 关闭自己写
+//    lab = new mylab(this);
+//    lab ->move(0, 0);
+//    lab->resize(this ->width(), 70);
+//    lab ->setText("123");
+
 
     minb =new mybtn(":/coin/min.png", ":/coin/min_1.png");
     minb ->setParent(this);
-    minb ->move(this ->width() - 115, 0);
+    minb ->move(this ->width() - 118, 2);
 
     maxb = new mybtn(":/coin/max.png", ":/coin/max_1.png");
-    maxb ->move(this ->width() - 75, 0);
+    maxb ->move(this ->width() - 78, 2);
     maxb ->setParent(this);
 
     clsb = new mybtn(":/coin/cls.png", ":/coin/cls_1.png");
     clsb ->setParent(this);
-    clsb ->move(this ->width() - 35, 0);
+    clsb ->move(this ->width() - 38, 2);
 
     //将minb maxb clsb 加入到水平布局中
     hlay ->addWidget(minb);
@@ -43,7 +47,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
 
     connect(maxb, &QPushButton::clicked, [=](){
         if(flag == 0) {
-            showFullScreen();
+            showMaximized();
             minb ->move(this ->width() - 115, 0);
             maxb ->move(this ->width() - 75, 0);
             clsb ->move(this ->width() - 35, 0);
@@ -60,8 +64,22 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     connect(clsb, &QPushButton::clicked, [=](){
        this ->close();
     });
-
 }
+
+bool leftflag = false; // 如果 leftflag == true 那么开始移动屏幕
+void MainWindow::mousePressEvent(QMouseEvent * e) {
+    if(e ->button() == Qt::LeftButton) {
+        leftflag = true;
+    }
+    glbal_p = e ->globalPos() - this ->pos();
+} // init mousePressEvent
+
+void MainWindow::mouseMoveEvent(QMouseEvent *e) {
+    if(leftflag) {
+        win_p = e ->globalPos();
+        this ->move(win_p - glbal_p);
+    }
+} // init mouseMoveEvent
 
 MainWindow::~MainWindow()
 {
