@@ -18,9 +18,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     // 以上关于mysql的初始化
 
     //关于播放列表 显示 的创建
-    tbw = new QTableWidget(this);
-    tbw ->move(50, 200);
-    tbw ->setHorizontalHeaderLabels(QStringList() << "歌曲");
+//    ui ->tbw = new QTableWidget(this);
+//    tbw ->move(50, 200);
+//    ui ->tbw ->setHorizontalHeaderLabels(QStringList() << "歌曲");
 
     // 用来显示当前播放歌曲
     musicL = new QLabel(this);
@@ -79,7 +79,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
        this ->close();
     }); // 关闭按钮
 
-
+      init();
 }
 
 // 初始化整个播放列表
@@ -105,16 +105,17 @@ void MainWindow::init() {
 QStringList MainWindow::getfileName(const QString& file) {
        QDir dir(file);
        QStringList filelist;
-       filelist << "*.mp3" << "*.mgg";
+       filelist << "*.mp3";
        QStringList res = dir.entryList(filelist, QDir::Files | QDir::Readable, QDir::Name);
        return res;
 }
 
 void MainWindow::addItem(QString& file) {
-    int count = tbw ->rowCount();                                // count 音乐列表的行数
-    tbw ->setRowCount(count + 1);                            // count + 1行 因为要载入新的 歌曲
+    int count = ui -> tbw ->rowCount();                                // count 音乐列表的行数
+    qDebug() <<count << endl;
+    ui -> tbw ->setRowCount(count + 1);                           // count + 1行 因为要载入新的 歌曲
     QTableWidgetItem* witem = new QTableWidgetItem(file);  // 创建 item
-    tbw ->setItem(count, 0, witem);                              // 用item 载入歌曲
+    ui -> tbw ->setItem(count, 0, witem);                              // 用item 载入歌曲
 } // TableWidght  addItem
 
 void MainWindow::showPlayMedia() {

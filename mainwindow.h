@@ -31,7 +31,7 @@ public:
     QMediaPlaylist *Playlist;  // 多媒体列表
     QString filem = "F:\\qq音乐\\Music";           // 音乐文件路径
     QStringList filemlist;
-    QTableWidget* tbw;  // 建立播放列表样式
+//    QTableWidget* tbw;  // 建立播放列表样式
     QLabel* musicL;     // 用来显示当前播放歌曲
 
     //实现窗口的 任意拖动
