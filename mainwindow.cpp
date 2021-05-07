@@ -17,22 +17,32 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     db.open();  //打开数据库
     // 以上关于mysql的初始化
 
-    //关于播放列表 显示 的创建
-//    ui ->tbw = new QTableWidget(this);
-//    tbw ->move(50, 200);
-
-    // 用来显示当前播放歌曲
-    musicL = new QLabel(this);
-    musicL ->move(800, 500);
-
-    QHBoxLayout * hlay = new QHBoxLayout();    //设置minb maxb clsb 的水平布局让其对于窗口的相对位置不会改变
     int x = 1025, y = 700;  //记录初始的宽和高
     this ->resize(x, y);   // 设置主界面的宽高
     setWindowFlag(Qt::FramelessWindowHint);  // 删除以前的 最大化 最小化 关闭自己写
+    this ->setMinimumSize(QSize(x, y)); // 窗口最小 size
 
-    //获得屏幕的分辨率
-    QDesktopWidget* desk = QApplication::desktop();
-    QRect apprect = desk ->screenGeometry();
+
+
+    //播放 框架
+    PlayL = new QLabel(this);
+    PlayL ->setGeometry(0, 630, 1025, 80);
+    PlayL ->setStyleSheet("QLabel{background-color: rgb(128, 128, 128);}");
+
+    // 播放按钮的创建
+    playbt = new startbtn(":/coin/start.png", ":/coin/start_c.png", ":/coin/pause.png", ":/coin/pause_c.png");
+    playbt->setParent(this);
+    playbt ->move(480, 640);
+
+    // 下一首 功能按钮的创建
+    nextbt = new mybtn(":/coin/next.png", ":/coin/next_c.png");
+    nextbt ->setParent(this);
+    nextbt ->move(660, 640);
+
+    // 上一首 功能的按钮的创建
+    prevbt = new mybtn(":/coin/prev.png", ":/coin/prev_c.png");
+    prevbt ->setParent(this);
+    prevbt ->move(300, 640);
 
     //minb init
     minb =new mybtn(":/coin/min.png", ":/coin/min_1.png");
@@ -49,10 +59,21 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     clsb ->setParent(this);
     clsb ->move(this ->width() - 38, 2);
 
-    //将minb maxb clsb 加入到水平布局中
+    //将minb maxb clsb 加入到水平布局中.
+    QHBoxLayout * hlay = new QHBoxLayout();    //设置minb maxb clsb 的水平布局让其对于窗口的相对位置不会改变
     hlay ->addWidget(minb);
     hlay ->addWidget(maxb);
     hlay ->addWidget(clsb);
+
+
+    // 用来显示当前播放歌曲
+    musicL = new QLabel(this);
+    musicL ->move(200, 500);
+
+
+    //获得屏幕的分辨率
+    QDesktopWidget* desk = QApplication::desktop();
+    QRect apprect = desk ->screenGeometry();
 
     connect(minb, &QPushButton::clicked, [=](){
         showMinimized();
@@ -78,8 +99,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
        this ->close();
     }); // 关闭窗口按钮
 
-    playbt = new QPushButton(this);
-    playbt ->setGeometry(400, 400, 100, 50);
+
+    // 当点击playbt 时 开始 播放 或者 暂停音乐
     connect(playbt, &QPushButton::clicked, [=] () {
         if (playf == false) {
             Player ->play();
@@ -88,10 +109,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
             Player ->pause();
             playf = false;
         }
-    });  // 当点击playbt 时 开始 播放 或者 暂停音乐
+    });
 
-    nextbt = new QPushButton(this);
-    nextbt ->setGeometry(600, 400, 100, 50);
+
+    // 当点击nextbt 时 播放下一首 音乐
     connect(nextbt, &QPushButton::clicked, [=](){
         int idx = Playlist ->currentIndex();
         if(idx + 1 < filemlist.size()) Playlist ->next();
@@ -101,14 +122,19 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         }
     });
 
-    prevbt = new QPushButton(this);
-    prevbt ->setGeometry(200, 400, 100, 50);
+
+    // 当点击prevbt 时 播放上一首 音乐
     connect(prevbt, &QPushButton::clicked, [=](){
         int idx = Playlist ->currentIndex();
-        qDebug() << "the idx :   " <<  idx << endl;
         if(idx - 1 >= 0) Playlist ->previous();
+        else {
+            Playlist ->setCurrentIndex(filemlist.size() - 1);
+            Player ->play();
+        }
     });
-      init();
+
+    // 开始初始化音乐播放
+     init();
 }
 
 // 初始化整个播放列表
@@ -144,7 +170,6 @@ QStringList MainWindow::getfileName(const QString& file) {
 
 void MainWindow::addItem(QString& file) {
     int count = ui -> tbw ->rowCount();                                // count 音乐列表的行数
-    qDebug() <<count << endl;
     ui -> tbw ->setRowCount(count + 1);                           // count + 1行 因为要载入新的 歌曲
     QTableWidgetItem* witem = new QTableWidgetItem(file);  // 创建 item
     ui -> tbw ->setItem(count, 0, witem);                              // 用item 载入歌曲
@@ -155,6 +180,13 @@ void MainWindow::showPlayMedia() {
     QString textL =  filemlist[idx];
     musicL ->setText(textL);
 }  // 改变label 显示新的 歌曲名字
+
+
+
+
+
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool leftflag = false; // 如果 leftflag == true 那么开始移动屏幕
 void MainWindow::mousePressEvent(QMouseEvent * e) {

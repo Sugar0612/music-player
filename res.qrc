@@ -2,9 +2,17 @@
     <qresource prefix="/">
         <file>coin/cls.png</file>
         <file>coin/cls_1.png</file>
-        <file>coin/min.png</file>
-        <file>coin/min_1.png</file>
         <file>coin/max.png</file>
         <file>coin/max_1.png</file>
+        <file>coin/min.png</file>
+        <file>coin/min_1.png</file>
+        <file>coin/pause.png</file>
+        <file>coin/pause_c.png</file>
+        <file>coin/start.png</file>
+        <file>coin/start_c.png</file>
+        <file>coin/prev.png</file>
+        <file>coin/prev_c.png</file>
+        <file>coin/next.png</file>
+        <file>coin/next_c.png</file>
     </qresource>
 </RCC>

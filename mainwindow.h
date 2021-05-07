@@ -3,7 +3,6 @@
 
 #include<QMainWindow>
 #include <QSqlDatabase>
-#include <QPushButton>
 #include <QMouseEvent>
 #include<QEvent>
 #include<QMediaPlayer>      // 实现多媒体的 应用
@@ -12,6 +11,8 @@
 #include <QLabel> // 用来显示当前播放歌曲
 #include<QDir>
 #include "mybtn.h"
+#include"startbtn.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -26,14 +27,15 @@ public:
      bool playf = false;   // 当点击playf 时 如果是false 则为 播放音乐 否则为 停止音乐
      int flag = 0; // 当flag = 0 时 maxb 让窗口变大  flag = 1 时让窗口变成原来的样子
 
+    QLabel *PlayL;   //播放 框架
     mybtn *minb, *maxb, *clsb;  // 窗口的最大化 最小化 以及 关闭
     QSqlDatabase db;   // 用来连接数据库 来调用歌曲
     QMediaPlayer *Player;    // 实现多媒体操控
     QMediaPlaylist *Playlist;  // 多媒体列表
     QString filem = "F:\\qq音乐\\Music";           // 音乐文件路径
     QStringList filemlist;
-    QPushButton* playbt, *nextbt, *prevbt;
-//    QTableWidget* tbw;  // 建立播放列表样式
+    startbtn* playbt;
+    mybtn *nextbt, *prevbt;
     QLabel* musicL;     // 用来显示当前播放歌曲
 
     //实现窗口的 任意拖动
@@ -43,8 +45,8 @@ public:
 
 private slots:
     void init();    // 初始化播放器
-    QStringList getfileName(const QString& file);
-    void showPlayMedia();
+    QStringList getfileName(const QString& file);  // 将所有的 歌的文件路径都记录到 QstrinList中
+    void showPlayMedia();                                  //  将 当前播放歌的名称 在label 的 text 中显示
     void addItem(QString& file);   // 添加到TableWeight中
 
 
