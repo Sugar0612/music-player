@@ -20,7 +20,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     //关于播放列表 显示 的创建
 //    ui ->tbw = new QTableWidget(this);
 //    tbw ->move(50, 200);
-//    ui ->tbw ->setHorizontalHeaderLabels(QStringList() << "歌曲");
 
     // 用来显示当前播放歌曲
     musicL = new QLabel(this);
@@ -77,8 +76,38 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     connect(clsb, &QPushButton::clicked, [=](){
        this ->close();
-    }); // 关闭按钮
+    }); // 关闭窗口按钮
 
+    playbt = new QPushButton(this);
+    playbt ->setGeometry(400, 400, 100, 50);
+    connect(playbt, &QPushButton::clicked, [=] () {
+        if (playf == false) {
+            Player ->play();
+            playf = true;
+        } else {
+            Player ->pause();
+            playf = false;
+        }
+    });  // 当点击playbt 时 开始 播放 或者 暂停音乐
+
+    nextbt = new QPushButton(this);
+    nextbt ->setGeometry(600, 400, 100, 50);
+    connect(nextbt, &QPushButton::clicked, [=](){
+        int idx = Playlist ->currentIndex();
+        if(idx + 1 < filemlist.size()) Playlist ->next();
+        else {
+            Playlist ->setCurrentIndex(0);
+            Player ->play();
+        }
+    });
+
+    prevbt = new QPushButton(this);
+    prevbt ->setGeometry(200, 400, 100, 50);
+    connect(prevbt, &QPushButton::clicked, [=](){
+        int idx = Playlist ->currentIndex();
+        qDebug() << "the idx :   " <<  idx << endl;
+        if(idx - 1 >= 0) Playlist ->previous();
+    });
       init();
 }
 
@@ -96,6 +125,9 @@ void MainWindow::init() {
     }
 
     Playlist ->setCurrentIndex(0);   // 让playlist 的索引为0开始
+
+    Player ->setPlaylist(Playlist);
+    // 将歌曲从 playlist中加载 到player中 ~!!!!
 
     // 当改变了多媒体 (换歌曲), label ->settext  改变播放的歌曲的名字
     connect(Player, &QMediaPlayer::currentMediaChanged, this, &MainWindow::showPlayMedia);

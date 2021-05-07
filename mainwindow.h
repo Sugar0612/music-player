@@ -23,6 +23,7 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+     bool playf = false;   // 当点击playf 时 如果是false 则为 播放音乐 否则为 停止音乐
      int flag = 0; // 当flag = 0 时 maxb 让窗口变大  flag = 1 时让窗口变成原来的样子
 
     mybtn *minb, *maxb, *clsb;  // 窗口的最大化 最小化 以及 关闭
@@ -31,6 +32,7 @@ public:
     QMediaPlaylist *Playlist;  // 多媒体列表
     QString filem = "F:\\qq音乐\\Music";           // 音乐文件路径
     QStringList filemlist;
+    QPushButton* playbt, *nextbt, *prevbt;
 //    QTableWidget* tbw;  // 建立播放列表样式
     QLabel* musicL;     // 用来显示当前播放歌曲
 
