@@ -25,9 +25,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 
     //播放 框架
-    PlayL = new QLabel(this);
-    PlayL ->setGeometry(0, 630, 1025, 80);
-    PlayL ->setStyleSheet("QLabel{background-color: rgb(128, 128, 128);}");
+    musicW = new PlayWidget(this);
+    musicW ->setGeometry(0, 620, 1025, 80);
+//    musicW ->setStyleSheet("QWidget{background-color: rgb(248, 248, 255)}");
+
+
+    //窗口上方按钮的封装
+    btnL = new QLabel(this);
+    btnL ->setGeometry(0, 0, 1025, 50);
+    btnL ->setStyleSheet("QLabel{background-color: rgb(174, 205, 210); border: solid;}");
 
     // 播放按钮的创建
     playbt = new startbtn(":/coin/start.png", ":/coin/start_c.png", ":/coin/pause.png", ":/coin/pause_c.png");
@@ -37,12 +43,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     // 下一首 功能按钮的创建
     nextbt = new mybtn(":/coin/next.png", ":/coin/next_c.png");
     nextbt ->setParent(this);
-    nextbt ->move(660, 640);
+    nextbt ->move(560, 640);
 
     // 上一首 功能的按钮的创建
     prevbt = new mybtn(":/coin/prev.png", ":/coin/prev_c.png");
     prevbt ->setParent(this);
-    prevbt ->move(300, 640);
+    prevbt ->move(400, 640);
+
+    // 音量功能 的按钮创建
+    volbt = new startbtn (":/coin/vol.png", ":/coin/vol_c.png", ":/coin/unvol.png", ":/coin/unvol_c.png");
+    volbt ->setParent(this);
+    volbt ->move(640, 645);
+
 
     //minb init
     minb =new mybtn(":/coin/min.png", ":/coin/min_1.png");
@@ -151,6 +163,7 @@ void MainWindow::init() {
     }
 
     Playlist ->setCurrentIndex(0);   // 让playlist 的索引为0开始
+//    Player ->setVolume();
 
     Player ->setPlaylist(Playlist);
     // 将歌曲从 playlist中加载 到player中 ~!!!!

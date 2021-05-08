@@ -10,8 +10,10 @@
 #include<QTableWidget>
 #include <QLabel> // 用来显示当前播放歌曲
 #include<QDir>
+#include<QSlider>  // 音量进度条
 #include "mybtn.h"
 #include"startbtn.h"
+#include "playwidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -27,16 +29,18 @@ public:
      bool playf = false;   // 当点击playf 时 如果是false 则为 播放音乐 否则为 停止音乐
      int flag = 0; // 当flag = 0 时 maxb 让窗口变大  flag = 1 时让窗口变成原来的样子
 
-    QLabel *PlayL;   //播放 框架
     mybtn *minb, *maxb, *clsb;  // 窗口的最大化 最小化 以及 关闭
     QSqlDatabase db;   // 用来连接数据库 来调用歌曲
     QMediaPlayer *Player;    // 实现多媒体操控
     QMediaPlaylist *Playlist;  // 多媒体列表
     QString filem = "F:\\qq音乐\\Music";           // 音乐文件路径
     QStringList filemlist;
-    startbtn* playbt;
-    mybtn *nextbt, *prevbt;
-    QLabel* musicL;     // 用来显示当前播放歌曲
+    startbtn* playbt;                  // 音乐的播放按钮
+    mybtn *nextbt, *prevbt;       //下一首 和上一首 的按钮
+    startbtn  *volbt;                  //  音量按钮
+    QLabel* musicL, *btnL;      // 用来显示当前播放歌曲 和 窗口按钮的封装, 播放 框架
+    PlayWidget* musicW;   // 音乐播放器窗口
+//    QSlider* volS;  // 音量进度条
 
     //实现窗口的 任意拖动
     QPoint glbal_p, win_p;   // 用win_p - glabel_p 就是 偏移量

@@ -14,5 +14,9 @@
         <file>coin/prev_c.png</file>
         <file>coin/next.png</file>
         <file>coin/next_c.png</file>
+        <file>coin/unvol.png</file>
+        <file>coin/vol.png</file>
+        <file>coin/unvol_c.png</file>
+        <file>coin/vol_c.png</file>
     </qresource>
 </RCC>
