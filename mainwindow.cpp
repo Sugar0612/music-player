@@ -120,7 +120,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         if (playf == false) {
             Player ->play();
             this ->druntime = Player ->duration();  // 获得总时长
-            qDebug() << "time is :  " << this ->druntime << endl;
             time->start();
             playf = true;
         } else {
@@ -140,8 +139,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         }
         else {
             Playlist ->setCurrentIndex(0);
-            reinit(); // 初始化
             Player ->play();
+            reinit(); // 初始化
         }
     });
 
@@ -155,8 +154,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         }
         else {
             Playlist ->setCurrentIndex(filemlist.size() - 1);
-            reinit(); // 初始化
             Player ->play();
+            reinit(); // 初始化
         }
     });
 
@@ -217,13 +216,13 @@ void MainWindow::init() {
         Playlist ->addMedia(QUrl::fromLocalFile(this ->filem + "//" + file_));  //  加入到 playmedia 实体播放音乐列表
     }
 
-        Playlist ->setCurrentIndex(0);   // 让playlist 的索引为0开始
+       Playlist ->setCurrentIndex(0);   // 让playlist 的索引为0开始
 //    Player ->setVolume();
 
      Player ->setPlaylist(Playlist);
-    // 将歌曲从 playlist中加载 到player中 ~!!!!
+    // 将歌曲从 playlist中加载 到player中 !!!!
 
-    // 当改变了多媒体 (换歌曲), label ->settext  改变播放的歌曲的名字
+    // 当改变了多媒体 (换歌曲), label ->settext  改变播放的歌曲的名字 以及初始化
     connect(Player, &QMediaPlayer::currentMediaChanged, this, [=]() {
         MainWindow::showPlayMedia();
     });
@@ -247,7 +246,7 @@ void MainWindow::addItem(QString& file) {
 
 
 void MainWindow::showPlayMedia() {
-    reinit(); // 初始化
+    reinit();  //初始化
     int idx = Playlist ->currentIndex();
     QString textL =  filemlist[idx];
     musicL ->setText(textL);
@@ -301,12 +300,12 @@ void MainWindow::paintEvent(QPaintEvent *event) {
 
 void MainWindow::updatepos() {
     // druntime: 总进度 positontime: 当前进度
-    this ->positontime = this ->positontime + 1000; // 每过一秒 加一秒
+    this ->positontime += 1000; // 每过一秒 加一秒
     float a;
     a = (float)positontime / (float)Player ->duration();
     qDebug() << "curr:   "  << this ->positontime  << "all :   "  << Player ->duration() << endl;
-    qDebug() << "a :  " << a << endl;
-    X = a * 580 + 56;
+//    qDebug() << "a :  " << a << endl;
+     X = a * 580 + 58;
     if (X > 635) X = 635;
 
     qint64 time = Player ->duration();  // 毫秒单位
@@ -336,9 +335,11 @@ void MainWindow::updatepos() {
 
 // 初始化X
 void MainWindow::reinit() {
+    time ->stop();
     this ->druntime = Player ->duration();   // 获得总时长
     this ->positontime = 0; // 初始化
     this -> X = 63;
+    time -> start();
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool leftflag = false; // 如果 leftflag == true 那么开始移动屏幕
@@ -348,6 +349,7 @@ void MainWindow::mousePressEvent(QMouseEvent * e) {
     {
             int value;
             value = e->pos().x();
+            time ->stop();
             if(value < 220)
             {
                 X = 56;
@@ -366,6 +368,7 @@ void MainWindow::mousePressEvent(QMouseEvent * e) {
             }
            update(); // 重绘
            setCursor(Qt::PointingHandCursor);
+           time ->start();
     }
 
     // 点击窗口
@@ -378,6 +381,7 @@ void MainWindow::mousePressEvent(QMouseEvent * e) {
 void MainWindow::mouseMoveEvent(QMouseEvent *e) {
     // 移动进度条
     if (e->pos().y() > 640 && e->pos().y() < 675 && e ->pos().x() >= 220 && e ->pos().x() < 785) {
+        time ->stop();
         int value = e->pos().x();
         if (value < 220)
         {
@@ -393,9 +397,9 @@ void MainWindow::mouseMoveEvent(QMouseEvent *e) {
         }
 
         changePro();
-
         update();
         setCursor(Qt::PointingHandCursor);
+        time ->start();
     }
 
     // 移动窗口
@@ -407,7 +411,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent *e) {
 
 // 通过拖动进度条  改变歌曲进度
 void MainWindow::changePro() {
-    this ->positontime = (float)((X - 56) / (float)580.0) * this ->druntime;  //根据鼠标的坐标 反推出此时 音乐的进度
+    this ->positontime = (float)((X - 56) / (float)580.0) * Player ->duration();  //根据鼠标的坐标 反推出此时 音乐的进度
     Player ->setPosition(this ->positontime);       // 改变音乐的进度
     double secondtime1 = positontime / 1000;    // 当前播放的总秒数
     int minint1 = secondtime1 / 60;                // 当前播放的分钟
