@@ -20,14 +20,12 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp\
     mybtn.cpp\
-    startbtn.cpp\
-    playwidget.cpp
+    startbtn.cpp
 
 HEADERS += \
     mainwindow.h\
     mybtn.h\
-    startbtn.h\
-    playwidget.h
+    startbtn.h
 
 FORMS += \
     mainwindow.ui
