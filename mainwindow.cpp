@@ -5,7 +5,6 @@
 #include <QDesktopWidget>
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
-    this ->X = 63; // 初始化 X
     ui->setupUi(this);
 
    this ->setWindowTitle("Sugar music");  //主窗口的运行文件名称
@@ -23,13 +22,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     setWindowFlag(Qt::FramelessWindowHint);  // 删除以前的 最大化 最小化 关闭自己写
     this ->setMinimumSize(QSize(x, y)); // 窗口最小 size
 
-
-
-    //播放 框架封装
-//    PlayL = new QLabel(this);
-//    PlayL ->setGeometry(0, 620, 1025, 80);
-//    PlayL ->setStyleSheet("QLabel{background-color: rgb(248, 248, 255)}");
-
+    this ->X = 63; // 初始化 X
+    this ->V = 50; // 初始化 V
+    time = new QTimer(this);  // 初始化定时器
 
     //窗口上方按钮的封装
     btnL = new QLabel(this);
@@ -159,6 +154,23 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         }
     });
 
+
+    // 当 点击 音量按钮时 volF = false 时 静音    volF = true 时 返回当时 的 音量
+    connect(volbt, &QPushButton::clicked, [=] () {
+        if (!volF) {
+            volF = true;
+            bufferVol = this -> V;   // 用来 记录还没有静音时 V 的值
+            this ->V = 0;
+            Player ->setVolume(V); // 音量变为 0;
+            update(); // 重绘 painter
+        } else  {
+            volF =  false;
+            this ->V= bufferVol;  // 将静音前 V 的值还给V
+            Player ->setVolume(2 * V);
+            update();
+        }
+    });
+
     // 开始初始化音乐播放
      init();
      // 开始初始化进度条
@@ -195,7 +207,6 @@ void MainWindow::initPro() {
     // 设置 颜色
 
     // 定时器
-    time = new QTimer(this);
     time -> setInterval(1000); // 1000 毫秒触发一次
     connect(time, &QTimer::timeout, this, [=]() {
         updatepos();
@@ -217,7 +228,6 @@ void MainWindow::init() {
     }
 
        Playlist ->setCurrentIndex(0);   // 让playlist 的索引为0开始
-//    Player ->setVolume();
 
      Player ->setPlaylist(Playlist);
     // 将歌曲从 playlist中加载 到player中 !!!!
@@ -265,7 +275,7 @@ void MainWindow::paintEvent(QPaintEvent *event) {
     QColor inColor(255,0,0);      // 显示播放了多少的红色进度条
     QColor outColor(174, 205, 210);  // 小球
 
-     qDebug() << "X is : " << this ->X << endl;
+//     qDebug() << "X is : " << this ->X << endl;
     // 进度条的基底
     painter.save();
     painter.setPen(Qt::NoPen);
@@ -295,16 +305,40 @@ void MainWindow::paintEvent(QPaintEvent *event) {
     painter.setBrush(inColor);
     painter.drawEllipse(X + 157, 665, 6, 6);
     painter.restore();
-}
 
+    /////////////////////////////////////////////
+    // 构造 声音进度条
+    QPainter volumeP(this);
+    volumeP.setRenderHint(QPainter::SmoothPixmapTransform);  // 使用平滑的pixmap变换算法
+    volumeP.setRenderHint(QPainter::Antialiasing, true);   // 反走样
+
+    // 同绘制 进度条一样
+    volumeP.save();
+    volumeP.setPen(Qt::NoPen);
+    volumeP.setBrush(baseColor);
+    QRectF baserect = QRectF(670, 635, 50, 4);
+    volumeP.drawRoundedRect(baserect, 3, 3);
+    volumeP.restore();
+
+    volumeP.save();
+    volumeP.setPen(Qt::NoPen);
+    volumeP.setBrush(inColor);
+    QRectF inrect = QRectF(670, 635, V, 4);
+    volumeP.drawRoundedRect(inrect, 0, 3);
+    volumeP.restore();
+
+    volumeP.save();
+    volumeP.setPen(Qt::NoPen);
+    volumeP.setBrush(inColor);
+    volumeP.drawEllipse(V + 670, 633, 8, 8);
+    volumeP.restore();
+}
 
 void MainWindow::updatepos() {
     // druntime: 总进度 positontime: 当前进度
     this ->positontime += 1000; // 每过一秒 加一秒
     float a;
     a = (float)positontime / (float)Player ->duration();
-    qDebug() << "curr:   "  << this ->positontime  << "all :   "  << Player ->duration() << endl;
-//    qDebug() << "a :  " << a << endl;
      X = a * 580 + 58;
     if (X > 635) X = 635;
 
@@ -342,8 +376,19 @@ void MainWindow::reinit() {
     time -> start();
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool leftflag = false; // 如果 leftflag == true 那么开始移动屏幕
 void MainWindow::mousePressEvent(QMouseEvent * e) {
+    // 音量进度条
+    if (e ->pos().x() >= 670 && e ->pos().x() < 720 && e ->pos().y() >= 635 && e ->pos().y() <= 640)  {
+        V = e ->pos().x() - 670;
+        Player ->setVolume(V * 2);   // 调整音量
+        if (this ->volF) {
+           volF = false;
+           volbt->is_play = false;
+           volbt ->setIcon(QIcon(":/coin/vol.png"));
+        }
+        update();
+    }
+
     //点击进度条
     if( e->pos().y() > 640 && e->pos().y() < 675 && e ->pos().x() >= 220 && e ->pos().x() < 785)
     {
@@ -368,7 +413,7 @@ void MainWindow::mousePressEvent(QMouseEvent * e) {
             }
            update(); // 重绘
            setCursor(Qt::PointingHandCursor);
-           time ->start();
+           if(playf) time ->start();
     }
 
     // 点击窗口
@@ -379,6 +424,18 @@ void MainWindow::mousePressEvent(QMouseEvent * e) {
 } // init mousePressEvent
 
 void MainWindow::mouseMoveEvent(QMouseEvent *e) {
+    // 音量进度条
+    if (e ->pos().x() >= 670 && e ->pos().x() < 720 && e ->pos().y() >= 635 && e ->pos().y() <= 640)  {
+        V = e ->pos().x() - 670;
+        Player ->setVolume(V * 2);   // 调整音量
+        if (this ->volF) {
+           volF = false;
+           volbt->is_play = false;
+           volbt ->setIcon(QIcon(":/coin/vol.png"));
+        }
+        update();
+    }
+
     // 移动进度条
     if (e->pos().y() > 640 && e->pos().y() < 675 && e ->pos().x() >= 220 && e ->pos().x() < 785) {
         time ->stop();
@@ -399,7 +456,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent *e) {
         changePro();
         update();
         setCursor(Qt::PointingHandCursor);
-        time ->start();
+        if(playf) time ->start();
     }
 
     // 移动窗口
