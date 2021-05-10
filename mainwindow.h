@@ -31,8 +31,10 @@ public:
     ~MainWindow();
     QString current="00:00";   // 目前播放的时间
     QString all="00:00";   // 该歌曲的 时间
-
+     int bufferVol;   // 用来 在 valbt 的点击事件中 记录 还未变成 0 的THIS ->V 也会在之后的 点击中 将 V 的值 重新 赋值给V
      bool playf = false;   // 当点击playf 时 如果是false 则为 播放音乐 否则为 停止音乐
+     bool leftflag = false; // 如果 leftflag == true 那么开始移动屏幕
+     bool volF = false;     //volF = false 时 静音    volF = true 时 返回当时 的 音量
      int flag = 0; // 当flag = 0 时 maxb 让窗口变大  flag = 1 时让窗口变成原来的样子
 
     mybtn *minb, *maxb, *clsb, *nextbt, *prevbt;  // 窗口的最大化 最小化  关闭 下一首 和上一首 的按钮
@@ -60,6 +62,7 @@ public slots:
     void updatepos();   // 更新 播放时间
 private:
     int X;    // 进度条总长度  防止出现越界情况
+    int V;    //音量总长度  防止出现越界情况
     qint64 druntime;//总进度
     qint64  positontime = 0;//当前进度
     QTimer *time; //刷新
