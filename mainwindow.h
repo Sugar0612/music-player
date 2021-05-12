@@ -7,11 +7,13 @@
 #include<QEvent>
 #include<QPalette>
 #include<QTimer>
-#include <QPaintEvent>
 #include<QMediaPlayer>      // 实现多媒体的 应用
 #include<QMediaPlaylist>
+#include <QTableWidget>
+#include <QTabWidget>
+#include <QPushButton>
 #include<QPainter>
-#include<QTableWidget>
+#include <QPaintEvent>
 #include <QLabel> // 用来显示当前播放歌曲
 #include<QDir>
 #include<QSlider>  // 音量进度条
@@ -41,10 +43,11 @@ public:
     QSqlDatabase db;   // 用来连接数据库 来调用歌曲
     QMediaPlayer *Player;    // 实现多媒体操控
     QMediaPlaylist *Playlist;  // 多媒体列表
-    QString filem = "F:\\qq音乐\\Music";           // 音乐文件路径
+    QString filem;           // 音乐文件路径  "F:\\qq音乐\\Music";
     QStringList filemlist;
     startbtn* playbt ,*volbt;                  // 音乐的播放按钮  音量按钮
     QLabel* musicL, *btnL ,*liftLabel ,*rightLabel, *PlayL;     // 用来显示当前播放歌曲  窗口按钮的封装 左时间显示 右边时间显示 播放控件的封装
+    QTabWidget* mainmusic; // 设置音乐播放器 主窗口!
 
     //实现窗口的 任意拖动
     QPoint glbal_p, win_p;   // 用win_p - glabel_p 就是 偏移量
@@ -52,10 +55,10 @@ public:
     void mouseMoveEvent(QMouseEvent*);   // 鼠标移动事件
     void mousePressEvent(QMouseEvent*);  // 鼠标点击事件
 private slots:
+//    QPushButton  *localbnt;  // 点击录入本地音乐
     void init();    // 初始化播放器
     void initPro(); // 初始化进度条
     void showPlayMedia();                                  //  将 当前播放歌的名称 在label 的 text 中显示
-    void addItem(QString& file);   // 添加到TableWeight中
     QStringList getfileName(const QString& file);  // 将所有的 歌的文件路径都记录到 QstrinList中
     void reinit();  // x 初始化
 public slots:
