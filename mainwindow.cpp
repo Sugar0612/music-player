@@ -5,11 +5,18 @@
 #include <QDesktopWidget>
 #include <QFileDialog>
 #include <QSqlQuery>
+#include <QPropertyAnimation>
 #include <QPushButton>
+#include <QMessageBox>
+#include <QFont>
+#include <deque>
 #include <QVariant>
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    Player = new QMediaPlayer();   // 实体化播放列表
+    Playlist = new QMediaPlaylist();
 
     int x = 1025, y = 700;  //记录初始的宽和高
     this ->resize(x, y);   // 设置主界面的宽高
@@ -20,52 +27,47 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     this ->V = 50; // 初始化 V
 
     this ->setWindowTitle("糖糖音乐");  //主窗口的运行文件名称
-    this ->setWindowIcon(QIcon(":/coin/mymusic .png"));  // 主窗口的图标设置!
+    this ->setWindowIcon(QIcon(":/coin/mymusic.png"));  // 主窗口的图标设置!
 
     time = new QTimer(this);  // 初始化定时器
 
-
-
-    db = QSqlDatabase::addDatabase("QMYSQL");    // 加载mysql 驱动
-    db.setHostName("localhost");  // 主机名
-    db.setDatabaseName("musicbase"); // 库名
-    db.setUserName("root"); //用户名
-    db.setPassword("tsy20010612"); // 密码
-    db.open();  //打开数据库
+    initMysql();
     // 以上关于mysql的初始化
 
-     //////////////////////
-     //用来导入 本地音乐
-    QPushButton* localbnt = new QPushButton(this);
-    localbnt ->setGeometry(0, 100, 160, 40);
+    //关于字体
+    QFont font, font_L;
+    font.setFamily("幼圆");
+    font.setPointSize(12);
+    font_L.setFamily("楷体");
+    font_L.setPointSize(15);
 
-     // 插入到MYSQY 数据库中
-    if (!filem.isEmpty())  {
-        QSqlQuery sql;
-        QString sfile = QString("insert into music values (" +  this -> filem + ");" ); // 插入从本地音乐目录路径
-        qDebug() << sfile << endl;
-        sql.exec(sfile);  // 开始执行
-    }
-    // 将mysql中的音乐路径打印出来
-    QSqlQuery selectq;
-    selectq.exec("select name from localmusic;");
-    selectq.next();
-
-    // 读入文件路径 开始初始化本地音乐库
-    if(!selectq.value(0).value<QString>().isNull()) {
-        this ->filem = selectq.value(0).value<QString>();
-        init();
-    }
-
-    // 初始化主界面
-    mainmusic = new QTabWidget(this);
-    mainmusic ->setGeometry(160, 70, 865, 530);
+     // musicTab init
+     musicTab = new QWidget;
 
 
-    //窗口上方按钮的封装
-    btnL = new QLabel(this);
-    btnL ->setGeometry(0, 0, 1025, 70);
-    btnL ->setStyleSheet("QLabel{background-color: rgb(174, 205, 210); border: solid;}");
+     // lyricsTab init
+      lyricsTab = new QWidget;
+
+     // 初始化主界面
+     mainmusic = new mytabwidget(this);
+     mainmusic ->addTab(musicTab, "歌曲");
+     mainmusic ->addTab(lyricsTab, "歌词");
+
+     // 本地音乐的播放列表
+     local_w = new mylistwidget(musicTab);
+
+     //窗口上方按钮的封装
+     btnL = new QLabel(this);
+     btnL ->setGeometry(0, 0, 1025, 70);
+     btnL ->setStyleSheet("QLabel{background-color: rgb(174, 205, 210); border: solid;}");
+     btnL ->setFont(font_L);
+     btnL ->setText("     糖糖音乐");
+
+
+    // 主窗口 按钮图标
+     winicon = new mybtn(":/coin/mymusic.png", ":/coin/mymusic.png");
+     winicon ->setParent(this);
+     winicon ->move(12, 12);
 
     // 播放按钮的创建
     playbt = new startbtn(":/coin/start.png", ":/coin/start_c.png", ":/coin/pause.png", ":/coin/pause_c.png");
@@ -86,6 +88,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     volbt = new startbtn (":/coin/vol.png", ":/coin/vol_c.png", ":/coin/unvol.png", ":/coin/unvol_c.png");
     volbt ->setParent(this);
     volbt ->move(640, 625);
+
+    // 播放列表 按钮
+    listbtn = new mybtn(":/coin/list.png", ":/coin/list_c.png");
+    listbtn ->setParent(this);
+    listbtn ->move(940, 625);
 
     //minb init
     minb =new mybtn(":/coin/min.png", ":/coin/min_1.png");
@@ -108,11 +115,42 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     hlay ->addWidget(maxb);
     hlay ->addWidget(clsb);
 
+    // "我的音乐"  标签
+    mymusic = new mylab("我的音乐", this);
+    mymusic ->setGeometry(0, 70, 160, 40);
+
+    // 我的歌单标签
+    mylist = new mylab("我的歌单", this);
+    mylist ->setGeometry(0, 210, 160, 40);
 
     // 用来显示当前播放歌曲
     musicL = new QLabel(this);
-    musicL ->setGeometry(30, 620,150, 20);
+    musicL ->setGeometry(30, 620,150, 50);
+    musicL ->setFont(font);
 
+
+    // 我的音乐 的列表 窗口
+    musiclist = new mylistwidget(this);
+    musiclist ->setGeometry(0, 110, 160, 100);
+    musiclist ->setFocusPolicy(Qt::NoFocus); // 去掉虚线框
+     // 歌单列表
+    songlist = new mylistwidget(this);
+    songlist ->setGeometry(0, 250, 160, 350);
+
+    //本地音乐列表
+    mylocalmusic = new QListWidgetItem(musiclist);
+    mylocalmusic ->setText("本地音乐");
+    mylocalmusic ->setFont(font);
+
+    // 歌曲的队列
+    songqueue = new mylistwidget(this);
+    songqueue ->setGeometry(1053, 110, 250, 485);
+    songqueue ->setStyleSheet("QListWidget::Item{height: 100px;}");
+
+    // 喜欢的音乐列表
+    likemusiclist = new QListWidgetItem(musiclist);
+    likemusiclist ->setText("喜爱的音乐");
+    likemusiclist ->setFont(font);
 
     //获得屏幕的分辨率
     QDesktopWidget* desk = QApplication::desktop();
@@ -147,50 +185,63 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // 当点击playbt 时 开始 播放 或者 暂停音乐
     connect(playbt, &QPushButton::clicked, [=] () {
-        int idx = Playlist ->currentIndex();
-        QString textL =  filemlist[idx];
-        musicL ->setText(textL); //用来显示当前播放歌曲
-         this ->setWindowTitle(textL); // 用来 改变窗口的 名称
-        if (playf == false && filemlist.size() != 0) {
-            qDebug() << filemlist.size() << endl;
-            Player ->play();
-            this ->druntime = Player ->duration();  // 获得总时长
-            time->start();
-            playf = true;
+        if (!Playlist ->isEmpty()) {
+            int idx = Playlist ->currentIndex();
+            QString textL =  nowlist[idx];
+            musicL ->setText(getMName(textL) + "<br>" + getPName(textL)); //用来显示当前播放歌曲
+            this ->setWindowTitle(textL); // 用来 改变窗口的 名称
+            if (playf == false && nowlist.size() != 0) {
+                Player ->play();
+                this ->druntime = Player ->duration();  // 获得总时长
+                time ->start();
+                playf = true;
+            } else {
+                Player ->pause();
+                time ->stop();
+                playf = false;
+            }
         } else {
-            Player ->pause();
-            time ->stop();
-            playf = false;
+            QMessageBox::information(this, "warning", "请录入音乐", QMessageBox::Ok);  // 提示用户应该录入 音乐
         }
     });
 
 
     // 当点击nextbt 时 播放下一首 音乐
     connect(nextbt, &QPushButton::clicked, [=](){
-        int idx = Playlist ->currentIndex();
-        if(idx + 1 < filemlist.size()) {
-            Playlist ->next();
-            reinit(); // 初始化
-        }
-        else {
-            Playlist ->setCurrentIndex(0);
-            Player ->play();
-            reinit(); // 初始化
+        if (!Playlist ->isEmpty()) {
+            int idx = Playlist ->currentIndex();
+            if(idx + 1 < nowlist.size()) {
+                qDebug() << "IN" << endl;
+                Player ->pause();   // 暂停
+                Playlist ->next();  // 切换
+                Player ->play();  // 播放
+                initPlayer(); // 初始化播放
+                reinit(); // 初始化
+            }
+            else {
+                qDebug() << "IN" << endl;
+                Playlist ->setCurrentIndex(0);
+                Player ->play();
+                reinit(); // 初始化
+            }
         }
     });
 
 
     // 当点击prevbt 时 播放上一首 音乐
     connect(prevbt, &QPushButton::clicked, [=](){
-        int idx = Playlist ->currentIndex();
-        if(idx - 1 >= 0) {
-            Playlist ->previous();
-            reinit(); // 初始化
-        }
-        else {
-            Playlist ->setCurrentIndex(filemlist.size() - 1);
-            Player ->play();
-            reinit(); // 初始化
+        if (!Playlist ->isEmpty()) {
+            int idx = Playlist ->currentIndex();
+            if(idx - 1 >= 0) {
+                Playlist ->previous();
+                initPlayer(); // init 播放btn
+                reinit(); // 初始化
+            }
+            else {
+                Playlist ->setCurrentIndex(filemlist.size() - 1);
+                Player ->play();
+                reinit(); // 初始化
+            }
         }
     });
 
@@ -211,22 +262,41 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         }
     });
 
+
+    //点击 listbtn 出现 播放列表
+    connect(listbtn, &QPushButton::clicked, [=] () {
+        if (!is_open) {       // 打开 播放列表
+            is_open = true;
+            QPropertyAnimation *an  = new QPropertyAnimation(songqueue, "geometry");
+            an ->setDuration(200);
+            an ->setStartValue(QRect(1053, 108, 253, 488));
+            an ->setEndValue(QRect(800, 108, 253, 488));
+            an ->setEasingCurve(QEasingCurve::Linear);
+            an ->start();
+        } else {    // 关闭播放列表
+            is_open = false;
+            QPropertyAnimation* an = new QPropertyAnimation(songqueue, "geometry");
+            an ->setDuration(200);
+            an ->setStartValue(QRect(800, 108, 253, 488));
+            an ->setEndValue(QRect(1053, 108, 253, 488));
+            an ->setEasingCurve(QEasingCurve::Linear);
+            an ->start();
+        }
+    });
+
+    // 当点击 本地音乐item 时显示本地音乐
+    connect(musiclist, SIGNAL(itemClicked(QListWidgetItem*)),this, SLOT(showlocal(QListWidgetItem*)));
+
+
     // 开始初始化进度条
     initPro();
 
-    // 开始初始化音乐播放
-    connect(localbnt, &QPushButton::clicked, [=] () {
-        QSqlQuery localsq;  // 用来将 即将读入的目录路径存入mysql中
-        this ->filem =  QFileDialog::getExistingDirectory(this, "open");
-        QString sfile = "insert into localmusic values ('" + this ->filem + "');";
-        if (filem.size() != 0) {    // 如果 读入的数据必须有效
-            init();
-        }
-    });
+    //封装box
+    innowplay();
+
 }
 
 //####################################################################################
-
 
 // 初始化进度条
 void MainWindow::initPro() {
@@ -257,29 +327,41 @@ void MainWindow::initPro() {
     rightLabel ->setText("00:00");
     // 设置 颜色
 
+
     // 定时器
-    if(filemlist.size() != 0) {
-        time -> setInterval(1000); // 1000 毫秒触发一次
-        connect(time, &QTimer::timeout, this, [=]() {
-            updatepos();
-        });  // 1秒 触发一次 updatepos();
-    }
+    connect(this, &MainWindow::beginplay, [=] () {
+        if(!Playlist ->isEmpty()) {
+            time -> setInterval(1000); // 1000 毫秒触发一次
+            connect(time, &QTimer::timeout, this, [=]() {
+                updatepos();
+            });  // 1秒 触发一次 updatepos();
+        }
+    });
 }
+
+
+void MainWindow::initMysql() {
+    db = QSqlDatabase::addDatabase("QMYSQL");    // 加载mysql 驱动
+    db.setHostName("localhost");  // 主机名
+    db.setDatabaseName("musicbase"); // 库名
+    db.setUserName("root"); //用户名
+    db.setPassword("tsy20010612"); // 密码
+    db.open();  //打开数据库
+}
+
 
 // 初始化整个播放列表
 void MainWindow::init() {
-    Player = new QMediaPlayer();   // 实体化播放列表
-    Playlist = new QMediaPlaylist();
 
-    filemlist = getfileName(this ->filem);   // 用来存储载入歌曲的 歌名
+//    filemlist = getfileName(this ->filem);   // 用来存储载入歌曲的 歌名
+//    innowplay(); // 录入当前播放歌曲的路径
 
-    for(int i = 0; i < filemlist.size(); ++i) {
-        QString file_ = filemlist[i];   //  获取文件路径的字符串
-        Playlist ->addMedia(QUrl::fromLocalFile(this ->filem + "//" + file_));  //  加入到 playmedia 实体播放音乐列表
-    }
+//    for(int i = 0; i < nowplaylist.size(); ++i) {
+//        QString file_ = nowplaylist[i];   //  获取文件路径的字符串
+//        Playlist ->addMedia(QUrl::fromLocalFile(file_));  //  加入到 playmedia 实体播放音乐列表
+//    }
 
-      if(filemlist.size() != 0) {
-            qDebug() << "size :  " << filemlist.size() << endl;
+      if(nowplaylist.size() != 0) {
             Playlist ->setCurrentIndex(0);   // 让playlist 的索引为0开始
 
             Player ->setPlaylist(Playlist);
@@ -290,6 +372,21 @@ void MainWindow::init() {
             MainWindow::showPlayMedia();
          });
       }
+}
+
+// 用来 单独封装控制 播放
+void MainWindow::initPlayer() {
+    int _idx = Playlist ->isEmpty() ? 0 : Playlist ->currentIndex();  //获取 播放位置
+    QString textL =  nowlist[_idx];
+    musicL ->setText(getMName(textL) + "<br>" + getPName(textL)); //用来显示当前播放歌曲
+    this ->setWindowTitle(textL); // 用来 改变窗口的 名称
+
+    if (playf == false && filemlist.size() != 0) {
+        playbt ->is_play = true;
+        playbt ->setIcon(QIcon(":/coin/pause.png"));  // 改变图标
+        this ->druntime = Player ->duration();  // 获得总时长
+        playf = true;
+    }
 }
 
 //让QstringList 获得所有选中的歌曲文件路径
@@ -305,8 +402,9 @@ QStringList MainWindow::getfileName(const QString& file) {
 void MainWindow::showPlayMedia() {
     reinit();  //初始化
     int idx = Playlist ->currentIndex();
-    QString textL =  filemlist[idx];
-    musicL ->setText(textL);
+    QString textL =  nowlist[idx];
+    qDebug() << textL << "  " << getPName(textL) << endl;
+    musicL ->setText(getMName(textL) + "<br>" + getPName(textL));
     this ->setWindowTitle(textL);  // 用来 改变窗口的 名称
 }  // 改变label 显示新的 歌曲名字
 
@@ -423,6 +521,218 @@ void MainWindow::reinit() {
     this -> X = 63;
     time -> start();
 }
+
+// 初始化 listwidgetitem
+void MainWindow::boxitem(int i, QString text, QString file, QString file_c, QListWidget* lw, QMap<int, mybtn*>& b, QMap<int, QListWidgetItem*>& _i) {
+     if(text == "") {
+        qDebug() << "null filename!" << endl;
+        return;
+     }
+     QFont font;
+     font.setFamily("幼圆");
+     font.setPointSize(10);
+
+    QListWidgetItem *item = new QListWidgetItem();  // 新的一首歌
+    lw ->addItem(item);
+
+
+    QWidget *iwt = new QWidget(lw);      //new widget
+    iwt ->resize(253, 100);
+
+    mybtn* tbtn = new mybtn(file, file_c);  // 按钮用来删除
+    tbtn ->move(100, 4);
+
+    QLabel* l = new QLabel(iwt);             //显示 歌曲名称
+    l ->setGeometry(0, 0, iwt ->width() - 150,  iwt ->height());
+    l ->setFont(font);
+    l ->setText(getMName(text) + "<br>" + getPName(text));
+
+    iwt ->setStyleSheet("QWidget {background: white; border-left: 2px;}");
+
+    QHBoxLayout *layout=new QHBoxLayout;     //  布局
+    layout ->addWidget(l);
+    layout ->addWidget(tbtn);
+    iwt ->setLayout(layout);
+
+    iwt ->setStyleSheet("QWidget::hover{background:rgb(228, 228, 228);}"
+                         "QWidget::selected{background:rgb(228,228,228);}");
+    lw ->setItemWidget(item, iwt);   // 实现item 和 widget1的结合(显示 控件)
+
+    // 存储
+    b[i] = tbtn;
+    _i[i] = item;
+}
+
+
+// 加入到歌曲队列
+void MainWindow::queuefun(QListWidget* lw, QString file) {
+    int cnt = lw ->count(); // 获取总行数 也是下一个item 插入的行数
+    if(file != "") {
+        int idx = Playlist ->isEmpty() ? 0 : Playlist ->mediaCount();
+        Playlist ->addMedia(QUrl::fromLocalFile(file)); // 加入到多媒体
+        Playlist ->setCurrentIndex(idx);  // 重新设置 多媒体位置
+        reinit(); // 初始化
+        Player ->play();
+        QString mname = getname(file); // 获取歌曲名字
+        boxitem(cnt, mname, ":/coin/delete.png", ":/coin/delete_c.png", lw, vb, vi);  // 加入队列 增加 item
+
+    }
+
+    for(int i = 0; i < vb.size(); ++i) {
+        connect(vb[i], &QPushButton::clicked, [=] () {
+            int idx = lw ->row(vi[i]);
+            // 删除item 以及歌曲
+            lw ->takeItem(idx);
+            Playlist ->removeMedia(idx);
+            nowlist.erase(nowlist.begin() + idx, nowlist.begin() + idx + 1);
+            if(nowlist.empty()) Player->stop();
+            showPlayMedia();
+            vi[i] = nullptr;
+            vb[i] = nullptr;
+        });
+    }
+}
+
+// 歌手名字
+QString MainWindow::getPName(QString file) {
+    bool is_ok = false;
+    QString res;
+    for(int i = 0; i < file.size(); ++i) {
+       if(is_ok) res += file[i];
+       if(file[i] == '-') is_ok = true;
+       if(i + 1 < file.size() && file[i + 1] == '.') break;
+    }
+    return res;
+}
+
+// 音乐名字
+QString MainWindow::getMName(QString file) {
+    QString res;
+    for(int i = 0; i < file.size(); ++i) {
+        res += file[i];
+        if(i + 1 < file.size() && file[i + 1] == '-') break;
+    }
+    return res;
+}
+
+void MainWindow::showlocal(QListWidgetItem* i) {
+    // 将mysql中的音乐路径打印出来
+    QSqlQuery selectq;
+    selectq.exec("select name from localmusic;");
+    selectq.next();
+
+    // 读入文件路径 开始初始化本地音乐库
+    if(!selectq.value(0).value<QString>().isNull()) this ->filem = selectq.value(0).value<QString>();
+
+//    qDebug() << "filem is :   "  << this ->filem << endl;
+    int idx = musiclist ->row(i);  //点击的是我的音乐的第几行item （共两行）
+    if (idx == 0) {  // idx == 0 说明点击的时 本地音乐
+        filemlist = getfileName(this ->filem);   // 用来存储载入歌曲的 歌名
+        local_w ->setGeometry(0, 0, musicTab->width(), musicTab->height());
+        local_w ->setStyleSheet("QListWidget::Item{height: 60px;}");
+        localinit(local_w); // init QlistWidget
+    }
+}
+
+// init 本地音乐 当点击item时 播放 那个item 对应的歌曲
+void MainWindow::localinit(QListWidget* lw) {
+    for(int i = 0; i < filemlist.size(); ++i) {
+        boxitem(i, filemlist[i], ":/coin/begin.png", ":/coin/begin.png", lw, l_vb, l_vi);
+    }  // 录入本地音乐text
+
+    // 点击播放切换歌曲
+    for(int i = 0; i < filemlist.size(); ++i) {
+        connect(l_vb[i], &mybtn::clicked, [=] () {
+            Player ->stop(); // 先停止音乐
+            l_updown(l_vb[i]);  // 按钮跳动
+            insert_nowplay(this ->filem + "/" + filemlist[i]);  // 插入到数据库 音乐队列中
+            playf = false; //准备初始化 播放按钮
+            initPlayer();   // 初始化播放按钮
+        });
+    }
+
+}
+
+// 按钮跳动动作
+void MainWindow::l_updown(mybtn* btn) {
+    // 向下
+    QPropertyAnimation *an  = new QPropertyAnimation(btn, "geometry");
+    an ->setDuration(200);
+    an ->setStartValue(QRect(btn->x(), btn->y(), btn->width(), btn->height()));
+    an ->setEndValue(QRect(btn->x(), btn->y() + 5, btn->width(), btn->height()));
+    an ->setEasingCurve(QEasingCurve::OutBounce);  // 弹跳方式
+    an ->start();
+
+    // 向上复原
+    QPropertyAnimation *a  = new QPropertyAnimation(btn, "geometry");
+    a ->setDuration(200);
+    a ->setStartValue(QRect(btn->x(), btn->y() + 5, btn->width(), btn->height()));
+    a ->setEndValue(QRect(btn->x(), btn->y(), btn->width(), btn->height()));
+    a ->setEasingCurve(QEasingCurve::OutBounce); // 弹跳方式
+    a ->start();
+}
+
+// 从数据库读出当前播放音乐的路径
+void MainWindow::innowplay() {
+    // 将mysql中的音乐路径打印出来
+    QSqlQuery selectq;
+    selectq.exec("select * from nowplay;");
+    // 开始导入 音乐队列
+    while (selectq.next()) {
+        this ->nowplaylist.push_back(selectq.value(0).value<QString>());
+    }
+    //将歌名导入
+    for(int i = 0; i < nowplaylist.size(); ++i) {
+        QString res = getname(nowplaylist[i]);
+        nowlist.push_back(res);
+        buflist.push_back(res);
+    }
+
+    //初始化播放列表
+    for(int i = 0; i < nowplaylist.size(); ++i) {
+        readmysql(songqueue, nowplaylist[i]); // 开始将歌曲一个一个的加入播放队列
+    }
+}
+
+ // 插入到数据库 和 音乐队列中
+void MainWindow::insert_nowplay(QString name) {
+    // 插入到数据库中
+    QSqlQuery sql;
+    QString sfile = QString("insert into nowplay values (\"" + name + "\");"); // 插入从本地音乐目录路径
+    sql.exec(sfile); // 执行
+    QString mname = getname(name); // 获取歌曲名字
+    if(nowlist.count(mname) == 0) {
+        nowlist .push_back(mname);
+        queuefun(songqueue, name); // 插入新的歌曲
+    }
+}
+
+// 获取当前音乐文件的文件名
+QString MainWindow::getname(QString file) {
+    QString ans;
+    for(int i = file.size() - 1; i >= 0; --i) {
+        if(file[i] != '\\' && file[i] != '/') ans.push_front(file[i]);
+        else break;
+    }
+    return ans;
+}
+
+void MainWindow::readmysql(QListWidget* lw, QString file) {
+    static int i = 0; // 防止多次启动time
+    i++; // 当i 大于 1 时不启动time
+    int cnt = lw ->count(); // 获取总行数 也是下一个item 插入的行数
+    if(file != "") {
+        int idx = Playlist ->isEmpty() ? 0 : Playlist ->currentIndex();
+        Playlist ->addMedia(QUrl::fromLocalFile(file)); // 加入到多媒体
+        Playlist ->setCurrentIndex(idx);  // 重新设置 多媒体位置
+        Player ->setPlaylist(Playlist);   //  重新载入 Player
+        if (i == 1) emit beginplay(); // 发出信号重新 构造进度条
+        QString mname = getname(file); // 获取歌曲名字
+        boxitem(cnt, mname, ":/coin/delete.png", ":/coin/delete_c.png", lw, vb, vi);  // 加入队列 增加 item
+
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 void MainWindow::mousePressEvent(QMouseEvent * e) {
     // 音量进度条

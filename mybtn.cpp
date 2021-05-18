@@ -1,11 +1,6 @@
 #include "mybtn.h"
 #include<QPixmap>
 #include <QMessageBox>
-//mybtn::mybtn(QObject *parent) : QPushButton(parent)
-//{
-
-//}
-
 mybtn::mybtn(const QString a, const QString b){
     this ->enter = a;
     this ->back = b; // 录入enter back
