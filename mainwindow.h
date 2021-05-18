@@ -33,8 +33,8 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    QMap<int, mybtn*> vb, l_vb;  // 用来存储 音乐item 里的按钮vb
-    QMap<int, QListWidgetItem*> vi, l_vi; // 用来存储 一首歌的item
+    QVector<mybtn*> vb, l_vb = QVector<mybtn*>(10000, nullptr);  // 用来存储 音乐item 里的按钮vb
+    QVector<QListWidgetItem*> vi, l_vi = QVector<QListWidgetItem*>(10000, nullptr); // 用来存储 一首歌的item
 
 
     MainWindow(QWidget *parent = nullptr);
@@ -73,13 +73,14 @@ public:
 private slots:
 //    QPushButton  *localbnt;  // 点击录入本地音乐
     void initMysql();
-    void init();    // 初始化播放器
+//    void init();    // 初始化播放器
     void initPlayer(); // 用来根据 playf 来改变播放器图标
     void initPro(); // 初始化进度条
     void showPlayMedia();                                  //  将 当前播放歌的名称 在label 的 text 中显示
+    void  readmysql(QListWidget*, QString);   // 初始化音乐队列 (仅在开启播放器的调用)
     QStringList getfileName(const QString& file);  // 将所有的 歌的文件路径都记录到 QstrinList中
     void reinit();  // x 初始化
-    void boxitem(int i, QString text, QString file, QString file_, QListWidget*, QMap<int, mybtn*>&, QMap<int, QListWidgetItem*>&); // 去在音乐列表里(QListWidget) 中实现一个item
+    void boxitem(int i, QString text, QString file, QString file_, QListWidget*, QVector<mybtn*>&, QVector<QListWidgetItem*>&); // 去在音乐列表里(QListWidget) 中实现一个item
     void queuefun(QListWidget*, QString); // 封装 boxitem
     QString getPName(QString filename); // 歌手名字
     QString getMName(QString filename); // 音乐名字
@@ -89,8 +90,7 @@ private slots:
     void l_updown(mybtn* btn); // 点击时: 按钮的上下移动
     void insert_nowplay(QString); // 插入到音乐队列中
     void innowplay(); // 将当前播放音乐路径录入
-    void  readmysql(QListWidget*, QString);   // 初始化音乐队列 (仅在开启播放器的调用)
-//    void outnowplay(); // 删除当前音乐路径
+    void deletenowplay(QString, int); // 删除队列item 并且删除mysql中的数据
 
 public slots:
     void updatepos();   // 更新 播放时间
