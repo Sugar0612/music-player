@@ -242,7 +242,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
                 reinit(); // 初始化
             }
             else {
-                Playlist ->setCurrentIndex(filemlist.size() - 1);
+                Playlist ->setCurrentIndex(nowplaylist.size() - 1);
                 Player ->play();
                 reinit(); // 初始化
             }
@@ -547,7 +547,6 @@ void MainWindow::boxitem(int i, QString text, QString file, QString file_c, QLis
 void MainWindow::queuefun(QListWidget* lw, QString file) {
     int idx = Playlist ->isEmpty() ? -1 : Playlist ->currentIndex();
     if(file != "") {
-        int idx = Playlist ->isEmpty() ? -1 : Playlist ->currentIndex();
         Playlist ->insertMedia(idx + 1, QUrl::fromLocalFile(file));// 加入到多媒体 插入到下一首歌后面
         Player ->setPlaylist(Playlist);
         Playlist ->setCurrentIndex(idx + 1);  // 重新设置 多媒体位置
@@ -559,12 +558,13 @@ void MainWindow::queuefun(QListWidget* lw, QString file) {
     boxitem(idx + 1, mname, ":/coin/delete.png", ":/coin/delete_c.png", lw, vb, vi);  // 加入队列 增加 item
 
      // 当点击vb[i] 时 删除此时的音乐 在音乐队列 和 mysql中
-    qDebug() << "vb.size() is :   " << vb.size() << endl;
-    for(int i = 0; i < vb.size(); ++i) {
-        connect(vb[i], &QPushButton::clicked, [=] () {
-            qDebug() << "vb clicked!  "  << endl;
-            deletenowplay(nowplaylist[i], i);
-        });
+    if(is_delete) {
+        for(int i = 0; i < vb.size(); ++i) {
+            connect(vb[i], &QPushButton::clicked, [=] () {
+                qDebug() << "new!" << endl;
+                deletenowplay(nowplaylist[i], i);
+            });
+        }
     }
 }
 
@@ -654,7 +654,7 @@ void MainWindow::innowplay() {
     // 开始导入 音乐队列
     while (selectq.next()) {
         this ->nowplaylist.push_back(selectq.value(0).value<QString>());
-        qDebug() << selectq.value(0).value<QString>() << endl;
+//        qDebug() << selectq.value(0).value<QString>() << endl;
     }
     //将歌名导入
     for(int i = 0; i < nowplaylist.size(); ++i) {
@@ -680,13 +680,20 @@ void MainWindow::insert_nowplay(QString name) {
     // 如果播放列表已经存在这首歌 那么只需要完成相对应的插入操作
     if (nowlist.count(m_name) != 0) {
         int idx = std::find(nowlist.begin(), nowlist.end(), m_name) - nowlist.begin(); // 找到这首歌的索引
-        int c_idx = Playlist ->currentIndex(); // 当前播放的索引
+        int c_idx = Playlist ->currentIndex() > idx ? Playlist ->currentIndex() - 1 : Playlist ->currentIndex(); // 当前播放的索引
 
         // 重新插入歌曲
-        Playlist ->removeMedia(idx);
-        Playlist ->insertMedia(c_idx + 1, QUrl::fromLocalFile(nowplaylist[idx]));
-        Playlist ->setCurrentIndex(c_idx + 1);
-        Player ->play();
+        if(idx == 0 && c_idx == Playlist ->mediaCount() - 2) {
+            Playlist ->setCurrentIndex(Playlist ->currentIndex() - 1);
+            Playlist ->addMedia(QUrl::fromLocalFile(nowplaylist[idx]));
+            Playlist ->removeMedia(0);
+            Player ->play();    // 就是 qt player 这个机制过于博大精深 我吐了真的.......不得不这样写了
+        } else {
+            Playlist ->removeMedia(idx);
+            Playlist ->insertMedia(c_idx + 1, QUrl::fromLocalFile(nowplaylist[idx]));
+            Playlist ->setCurrentIndex(c_idx + 1);
+            Player ->play();
+        }
 
         // 重新插入 item
         songqueue ->takeItem(idx);
@@ -702,8 +709,11 @@ void MainWindow::insert_nowplay(QString name) {
 
         nowlist.insert(nowlist.begin() + c_idx + 1, nowlist_s);
         nowplaylist.insert(nowplaylist.begin() + c_idx + 1, nowplaylist_s);
+        return;
     }
 
+    // 如果is_delete = false 那么调用readmysql 里面的deletenowplay 否则调用queuefun里面的deletenowplay
+    is_delete = true;
     // 插入到数据库中
     QSqlQuery sql;
     QString sfile = QString("insert into nowplay values (\"" + name + "\");"); // 插入从本地音乐目录路径
@@ -711,6 +721,7 @@ void MainWindow::insert_nowplay(QString name) {
     QString mname = getname(name); // 获取歌曲名字
     if(nowlist.count(mname) == 0) {
         int idx = Playlist ->currentIndex(); // 插入到此时播放音乐的后面
+        nowplaylist.insert(nowplaylist.begin() + idx + 1, name);
         nowlist.insert(nowlist.begin() + idx + 1, mname);
         queuefun(songqueue, name); //插入新的歌曲
     }
@@ -728,40 +739,48 @@ QString MainWindow::getname(QString file) {
 
 // 初始化音乐队列 (仅在开启播放器的调用)
 void MainWindow::readmysql(QListWidget* lw, QString file) {
-    int idx = Playlist ->isEmpty() ? -1 : Playlist ->currentIndex();
+    int idx = Playlist ->isEmpty() ? 0 : Playlist ->mediaCount();
     if(file != "") {
-        int idx = Playlist ->isEmpty() ? -1 : Playlist ->currentIndex();
-        Playlist ->insertMedia(idx + 1, QUrl::fromLocalFile(file));// 加入到多媒体 插入到下一首歌后面
+        int idx = Playlist ->isEmpty() ? 0 : Playlist ->mediaCount();
+        Playlist ->insertMedia(idx, QUrl::fromLocalFile(file));// 加入到多媒体 插入到下一首歌后面
         Player ->setPlaylist(Playlist);
         Playlist ->setCurrentIndex(0);  // 重新设置 多媒体位置
         reinit(); // 初始化
     }
 
     QString mname = getname(file); // 获取歌曲名字
-    boxitem(idx + 1, mname, ":/coin/delete.png", ":/coin/delete_c.png", lw, vb, vi);  // 加入队列 增加 item
+    boxitem(idx, mname, ":/coin/delete.png", ":/coin/delete_c.png", lw, vb, vi);  // 加入队列 增加 item
 
      // 当点击vb[i] 时 删除此时的音乐 在音乐队列 和 mysql中
-    for(int i = 0; i < vb.size(); ++i) {
-        connect(vb[i], &QPushButton::clicked, [=] () {
-            deletenowplay(nowplaylist[i], i);
-        });
+    if(!is_delete) {
+        for(int i = 0; i < vb.size(); ++i) {
+            connect(vb[i], &QPushButton::clicked, [=] () {
+                qDebug() << "vb size is:  " << vb.size() << "  old in!" << endl;
+                deletenowplay(nowplaylist[i], i);
+                qDebug() << "old out!" << endl;
+            });
+        }
     }
 }
 
 
-void MainWindow::deletenowplay(QString file, int i) {
-    QSqlQuery sql;
-    sql.exec("delete from nowplay where music = '" + file + "'; ");
-    qDebug() << 0 << endl;
-    int row = i;
-    qDebug() << "row is :  "  << row << endl;
-    this ->songqueue ->takeItem(row);
+void MainWindow::deletenowplay(QString file, int row) {
+    qDebug() << "row is :   " << row << endl;
     Playlist ->removeMedia(row);
+
     nowplaylist.erase(nowplaylist.begin() + row, nowplaylist.begin() + row + 1);
     nowlist.erase(nowlist.begin() + row, nowlist.begin() + row + 1);
     vb.erase(vb.begin() + row, vb.begin() + row + 1);
     vi.erase(vi.begin() + row, vi.begin() + row + 1);
+
+    this ->songqueue ->takeItem(row);
+
+    QSqlQuery sql;
+    sql.exec("delete from nowplay where music = '" + file + "'; ");
+    return;
 }
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 void MainWindow::mousePressEvent(QMouseEvent * e) {
     // 音量进度条

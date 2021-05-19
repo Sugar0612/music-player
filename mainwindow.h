@@ -46,6 +46,7 @@ public:
      bool leftflag = false; // 如果 leftflag == true 那么开始移动屏幕
      bool volF = false;     //volF = false 时 静音    volF = true 时 返回当时 的 音量
      bool is_open = false; // 当为false 时 点击 打开列表 否则关闭列表
+     bool is_delete = false; // 如果is_delete = false 那么调用readmysql 里面的deletenowplay 否则调用queuefun里面的deletenowplay
      int flag = 0; // 当flag = 0 时 maxb 让窗口变大  flag = 1 时让窗口变成原来的样子
 
     mybtn *minb, *maxb, *clsb, *nextbt, *prevbt, *winicon, *listbtn;  // 窗口的最大化 最小化  关闭 下一首 上一首 的按钮 主窗口图标  音乐列表图标
