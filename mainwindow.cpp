@@ -12,6 +12,10 @@
 #include <deque>
 #include <QVariant>
 #include <algorithm>
+#include <QJsonDocument>
+#include <QJsonParseError>
+#include <QJsonObject>
+#include <QJsonArray>
 using namespace std;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -32,7 +36,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     this ->setWindowTitle("糖糖音乐");  //主窗口的运行文件名称
     this ->setWindowIcon(QIcon(":/coin/mymusic.png"));  // 主窗口的图标设置!
 
+    // 固定大小
+    this ->setFixedSize(x, y);
+
     time = new QTimer(this);  // 初始化定时器
+
+    //关于tablewidget 上面的名字
+    list_col_table = QStringList() << "歌曲" << "作者" << "专辑" << "操作" << "时间";
 
     initMysql();
     // 以上关于mysql的初始化
@@ -66,6 +76,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
      btnL ->setFont(font_L);
      btnL ->setText("     糖糖音乐");
 
+
+     search_line = new QLineEdit(btnL); // 搜索框
+     search_line ->setGeometry(180, 18, 180, 40);
+
+    //搜索按钮
+     btn_search = new mybtn(":/coin/search.png", ":/coin/search.png");
+     btn_search ->setParent(btnL);
+     btn_search ->move(360, 20);
 
     // 主窗口 按钮图标
      winicon = new mybtn(":/coin/mymusic.png", ":/coin/mymusic.png");
@@ -155,9 +173,21 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     likemusiclist ->setText("喜爱的音乐");
     likemusiclist ->setFont(font);
 
+    // 显示搜索音乐的窗口
+    tab_search = new QTableWidget();
+    tab_search ->setColumnCount(5);  // 设置列数
+    tab_search ->setHorizontalHeaderLabels(list_col_table);// 设置列数的 名字
+
+
     //获得屏幕的分辨率
     QDesktopWidget* desk = QApplication::desktop();
     QRect apprect = desk ->screenGeometry();
+
+    // http init
+    net_manager = new QNetworkAccessManager();
+    net_request = new QNetworkRequest();
+    network_manager2 = new QNetworkAccessManager();
+    network_request2 = new QNetworkRequest();
 
     connect(minb, &QPushButton::clicked, [=](){
         showMinimized();
@@ -290,7 +320,25 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 
     // 当点击 本地音乐item 时显示本地音乐
-    connect(musiclist, SIGNAL(itemClicked(QListWidgetItem*)),this, SLOT(showlocal(QListWidgetItem*)));
+    connect(musiclist, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(showlocal(QListWidgetItem*)));
+
+    //当点击btn_search 开始搜索
+    connect(btn_search, &mybtn::clicked, this, [=] () {
+        v_hash.clear();
+        v_id.clear();
+        index = 0;
+        for(int i = 1; i <= 5; ++i) {
+            search(search_line ->text(), i);
+        }
+        tab_search ->setParent(mainmusic);
+        tab_search ->setGeometry(0, 0, mainmusic ->width(), mainmusic ->height());
+        tab_search ->show();  // 显示搜索的结果
+    });
+
+    connect(net_manager, &QNetworkAccessManager::finished, this, &MainWindow::reply);
+    connect(network_manager2, &QNetworkAccessManager::finished, this, &MainWindow::reply2);
+    connect(tab_search, &QTableWidget::cellDoubleClicked, this, &MainWindow::play_net_Music);
+
 
 
     // 开始初始化进度条
@@ -301,7 +349,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 }
 
-//####################################################################################
+//###################################################################################################################################
 
 // 初始化进度条
 void MainWindow::initPro() {
@@ -435,7 +483,7 @@ void MainWindow::paintEvent(QPaintEvent *event) {
     painter.drawEllipse(X + 157, 665, 6, 6);
     painter.restore();
 
-    /////////////////////////////////////////////
+
     // 构造 声音进度条
     QPainter volumeP(this);
     volumeP.setRenderHint(QPainter::SmoothPixmapTransform);  // 使用平滑的pixmap变换算法
@@ -524,12 +572,13 @@ void MainWindow::boxitem(int i, QString text, QString file, QString file_c, QLis
     iwt ->resize(253, 100);
 
     mybtn* tbtn = new mybtn(file, file_c);  // 按钮用来删除
-    tbtn ->move(100, 5);
+    tbtn ->move(70, 5);
 
     QLabel* l = new QLabel(iwt);             //显示 歌曲名称
     l ->setGeometry(0, 0, iwt ->width() - 200,  iwt ->height());
     l ->setFont(font);
     l ->setText(getMName(text) + "<br>" + getPName(text));
+    tbtn ->setParent(l);
 
     iwt ->setStyleSheet("QWidget {background: white; border-left: 2px;}");
 
@@ -567,10 +616,12 @@ void MainWindow::queuefun(QListWidget* lw, QString file) {
         for(int i = 0; i < vb.size(); ++i) {
             connect(vb[i], &QPushButton::clicked, [=] () {
                 qDebug() << "new in!" << endl;
-                qDebug() << file << endl;
+                qDebug() << nowplaylist[i] << endl;
                 qDebug() << "vb size is:  " << vb.size() << "    row is :  " << i << endl;
                 deletenowplay(nowplaylist[i], i);
+                return;
             });
+            break;
         }
     }
 }
@@ -613,6 +664,8 @@ void MainWindow::showlocal(QListWidgetItem* i) {
         local_w ->setGeometry(0, 0, musicTab->width(), musicTab->height());
         local_w ->setStyleSheet("QListWidget::Item{height: 60px;}");
         localinit(local_w); // init QlistWidget
+        local_w ->show();
+        tab_search ->hide();
     }
 }
 
@@ -763,9 +816,10 @@ void MainWindow::readmysql(QListWidget* lw, QString file) {
         for(int i = 0; i < vb.size(); ++i) {
             connect(vb[i], &QPushButton::clicked, [=] () {
                 qDebug() << "old in!" << endl;
-                qDebug() << file << endl;
                 qDebug() << "vb size is:  " << vb.size() << "    row is :  " << i << endl;
+                qDebug() << nowplaylist[i] << endl;
                 deletenowplay(nowplaylist[i], i);
+                return;
             });
         }
     }
@@ -774,14 +828,13 @@ void MainWindow::readmysql(QListWidget* lw, QString file) {
 
 void MainWindow::deletenowplay(QString file, int row) {
     if (vb.size() <= row) {
-        qDebug() << "idx big !!!" << endl;
         return;
     }
     Playlist ->removeMedia(row);
-    qDebug() << "Playlist remove finish!" << endl;
-    qDebug() << "/////////////////////////////////////////////" << endl;
     nowplaylist.erase(nowplaylist.begin() + row, nowplaylist.begin() + row + 1);
     nowlist.erase(nowlist.begin() + row, nowlist.begin() + row + 1);
+
+    vb[row] = nullptr;
     vb.erase(vb.begin() + row, vb.begin() + row + 1);
     vi.erase(vi.begin() + row, vi.begin() + row + 1);
 
@@ -793,6 +846,226 @@ void MainWindow::deletenowplay(QString file, int row) {
 }
 
 
+
+// 搜索 text 通过 http网络, 给予finish 相应
+void MainWindow::search(QString text, int idx) {
+    QString net_search = QString("http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=%1&page=%2&pagesize=18a").arg(text).arg(idx);
+    net_request ->setUrl(QUrl(net_search));
+    net_manager ->get(*net_request);
+}
+
+// net_manager finish 响应reply 开始在tableWidget 上显示
+void MainWindow::reply(QNetworkReply* re) {
+    QVariant status_code = re ->attribute(QNetworkRequest::HttpStatusCodeAttribute);
+
+    if (re ->error() == QNetworkReply::NoError) {
+        QByteArray bytes = re ->readAll();
+        QString res(bytes);
+        parseJson(res, index);
+        index += 20;
+    } else {
+        qDebug() << "error!" << endl;
+    }
+}
+
+// 解析 json 显示到 tablewidget上
+void MainWindow::parseJson(QString json, int idx) {
+        QString songname_original; //歌曲名
+            QString singername;        //歌手
+            QString hashStr;           //hash
+            QString album_name;        //专辑
+            int duration;          	   //时间
+            QByteArray byte_array;
+            QJsonParseError json_error;
+            QJsonDocument parse_doucment = QJsonDocument::fromJson(byte_array.append(json), &json_error);
+            if (json_error.error == QJsonParseError::NoError)
+            {
+                if (parse_doucment.isObject())
+                {
+                    QJsonObject rootObj = parse_doucment.object();
+                    if (rootObj.contains("data"))
+                    {
+                        QJsonValue valuedata = rootObj.value("data");
+                        if (valuedata.isObject())
+                        {
+                            QJsonObject valuedataObject = valuedata.toObject();
+                            if (valuedataObject.contains("info"))
+                            {
+                                QJsonValue valueArray = valuedataObject.value("info");
+                                if (valueArray.isArray())
+                                {
+                                    QJsonArray array = valueArray.toArray();
+                                    int size = array.size();
+                                    for (int i = idx, j = 0; i < size + idx && j < size; i++, ++j)
+                                    {
+                                        QJsonValue value = array.at(j);
+                                       if (value.isObject())
+                                       {
+                                            QJsonObject object = value.toObject();
+                                            if (object.contains("songname_original"))//歌曲名
+                                            {
+                                                QJsonValue AlbumID_value = object.take("songname_original");
+                                                if (AlbumID_value.isString())
+                                                {
+                                                    songname_original = AlbumID_value.toString();
+                                                }
+                                            }
+                                            if (object.contains("singername"))//歌手
+                                            {
+                                                QJsonValue AlbumID_value = object.take("singername");
+                                                if (AlbumID_value.isString())
+                                                {
+                                                    singername = AlbumID_value.toString();
+                                                }
+                                            }
+                                            if (object.contains("album_name"))//专辑
+                                            {
+                                                QJsonValue AlbumID_value = object.take("album_name");
+                                                if (AlbumID_value.isString())
+                                                {
+                                                    album_name = AlbumID_value.toString();
+                                                }
+                                            }
+                                            if (object.contains("hash")) //hash
+                                            {
+                                                QJsonValue FileHash_value = object.take("hash");
+                                                if (FileHash_value.isString())
+                                                {
+                                                    hashStr = FileHash_value.toString();
+                                                    //用Vector保存每首歌曲的hash
+                                                    v_hash.push_back(FileHash_value.toString());
+                                                }
+                                            }
+                                            if (object.contains("album_id"))
+                                            {
+                                                QJsonValue FileHash_value = object.take("album_id");
+                                                if (FileHash_value.isString())
+                                                {
+                                                    //用Vector保存每首歌曲的album_id
+                                                    v_id.push_back(FileHash_value.toString());
+                                                }
+                                            }
+                                            if (object.contains("duration"))//时长
+                                            {
+                                               QJsonValue AlbumID_value = object.take("duration").toInt();
+                                               duration = AlbumID_value.toInt();
+                                            }
+                                            //将解析出的内容放到列表中
+                                            tab_search ->setRowCount(i + 1);
+                                            tab_search ->setItem(i,0,new QTableWidgetItem(songname_original));
+                                            //文字居中
+                                            tab_search->item(i,0)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+
+
+                                            tab_search ->setItem(i,1,new QTableWidgetItem(singername));
+                                            tab_search ->item(i,1)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+
+                                            tab_search ->setItem(i,2,new QTableWidgetItem(album_name));
+                                            tab_search ->item(i,2)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+
+                                            QString time = QString("%1:%2").arg(duration/60).arg(duration%60);
+                                            tab_search ->setItem(i,4,new QTableWidgetItem(time));
+                                            tab_search ->item(i,4)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+                                      }
+                                 }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+}
+
+// 播放歌曲发出信号
+void MainWindow::play_net_Music(int row, int col) {
+    //歌曲请求 row 是行号
+    QString KGAPISTR1 =QString("http://www.kugou.com/yy/index.php?r=play/getdata"
+    "&hash=%1&album_id=%2&_=1497972864535").arg(v_hash.at(row)) .arg(v_id.at(row));
+    network_request2->setUrl(QUrl(KGAPISTR1));
+    //这句话很重要，我们手动复制url放到浏览器可以获取json，但是通过代码不行，必须加上下面这句才可以
+    network_request2->setRawHeader("Cookie","kg_mid=2333");
+    network_request2->setHeader(QNetworkRequest::CookieHeader, 2333);
+    network_manager2->get(*network_request2);
+}
+
+
+void MainWindow::reply2(QNetworkReply *re)  // 如果net_messageer finish  判断是否载入 然后进行js
+{
+    //获取响应的信息，状态码为200表示正常
+         QVariant status_code = re->attribute(QNetworkRequest::HttpStatusCodeAttribute);
+
+        //无错误返回
+        if(re->error() == QNetworkReply::NoError)
+        {
+            QByteArray bytes = re->readAll();  //获取字节
+            QString result(bytes);  //转化为字符串
+            parseJson2(result);//解析json
+        }
+        else
+        {
+            //处理错误
+            qDebug()<<"歌曲播放失败";
+        }
+}
+
+
+//解析 json
+void MainWindow::parseJson2(QString json) {
+    QString audio_name;//歌手-歌名
+    QString play_url;//播放地址
+    QString img;
+    QByteArray byte_array;
+    QJsonParseError json_error;
+    QJsonDocument parse_doucment = QJsonDocument::fromJson(byte_array.append(json), &json_error);
+    if(json_error.error == QJsonParseError::NoError) {
+       if(parse_doucment.isObject())
+       {
+           QJsonObject rootObj = parse_doucment.object();
+           if(rootObj.contains("data"))
+           {
+               QJsonValue valuedata = rootObj.value("data");
+               if(valuedata.isObject())
+               {
+                   QJsonObject valuedataObject = valuedata.toObject();
+                   QString play_urlStr("");
+                   if(valuedataObject.contains("play_url"))
+                   {
+                       QJsonValue play_url_value = valuedataObject.take("play_url");
+                       if(play_url_value.isString())
+                       {
+                           play_urlStr = play_url_value.toString();      //歌曲的url
+                           if(play_urlStr!="")
+                           {
+                               qDebug()<<play_urlStr;
+                               Player->setMedia(QUrl(play_urlStr));
+                               Player->play();
+                           }
+                       }
+                   }
+                   if(valuedataObject.contains("audio_name"))
+                   {
+                       QJsonValue play_name_value = valuedataObject.take("audio_name");
+                       if(play_name_value.isString())
+                       {
+                           QString audio_name = play_name_value.toString();    //歌曲名字
+                           if(audio_name!="")
+                           {
+                               //显示
+                               qDebug()<<audio_name;
+//                                   ui->label_2->setText(audio_name);
+                           }
+                       }
+                   }
+               }
+                    //下一篇的歌词获取也是在这里添加代码
+                    //图片显示代码在这里添加
+               else {
+                    qDebug()<<"出错";
+                }
+           }
+       }
+    }
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 void MainWindow::mousePressEvent(QMouseEvent * e) {
     // 音量进度条

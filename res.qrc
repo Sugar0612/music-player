@@ -24,5 +24,6 @@
         <file>coin/delete.png</file>
         <file>coin/delete_c.png</file>
         <file>coin/begin.png</file>
+        <file>coin/search.png</file>
     </qresource>
 </RCC>
