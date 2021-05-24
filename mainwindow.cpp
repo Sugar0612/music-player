@@ -327,7 +327,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         v_hash.clear();
         v_id.clear();
         index = 0;
-        for(int i = 1; i <= 5; ++i) {
+        for(int i = 1; i <= 10; ++i) {
             search(search_line ->text(), i);
         }
         tab_search ->setParent(mainmusic);
@@ -737,7 +737,7 @@ void MainWindow::innowplay() {
 void MainWindow::insert_nowplay(QString name) {
     QString m_name = getname(name); // 获得名字 然后搜索nowlist 是否已经存在这首歌
     // 如果播放列表已经存在这首歌 那么只需要完成相对应的插入操作
-    if (nowlist.count(m_name) != 0) {      
+    if (nowlist.count(m_name) != 0) {
         int idx = std::find(nowlist.begin(), nowlist.end(), m_name) - nowlist.begin(); // 找到这首歌的索引
         int c_idx = Playlist ->currentIndex() > idx ? Playlist ->currentIndex() - 1 : Playlist ->currentIndex(); // 当前播放的索引
 
@@ -1036,22 +1036,22 @@ void MainWindow::parseJson2(QString json) {
                            play_urlStr = play_url_value.toString();      //歌曲的url
                            if(play_urlStr!="")
                            {
-                               qDebug()<<play_urlStr;
+                               qDebug() << "line 1039: " << play_urlStr << endl;
                                Player->setMedia(QUrl(play_urlStr));
                                Player->play();
                            }
                        }
                    }
-                   if(valuedataObject.contains("audio_name"))
+                   if(valuedataObject.contains("singername"))
                    {
-                       QJsonValue play_name_value = valuedataObject.take("audio_name");
-                       if(play_name_value.isString())
+                       QJsonValue name_songer = valuedataObject.take("singername");
+                       if(name_songer.isString())
                        {
-                           QString audio_name = play_name_value.toString();    //歌曲名字
-                           if(audio_name!="")
+                           QString songer_name = name_songer.toString();    //歌曲名字
+                           if(songer_name!="")
                            {
                                //显示
-                               qDebug()<<audio_name;
+                               qDebug()<<songer_name;
 //                                   ui->label_2->setText(audio_name);
                            }
                        }
