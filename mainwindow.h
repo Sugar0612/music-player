@@ -53,6 +53,7 @@ public:
      bool volF = false;     //volF = false 时 静音    volF = true 时 返回当时 的 音量
      bool is_open = false; // 当为false 时 点击 打开列表 否则关闭列表
      bool is_delete = false; // 如果is_delete = false 那么调用readmysql 里面的deletenowplay 否则调用queuefun里面的deletenowplay
+     bool is_net = false; // 根据 is_net 的不同判断是否时 网络音乐 从而实现不同的操作
      int flag = 0; // 当flag = 0 时 maxb 让窗口变大  flag = 1 时让窗口变成原来的样子
      int index = 0;  // 用来在tablewidget 中显示歌曲
 
@@ -63,6 +64,7 @@ public:
     QMediaPlaylist *Playlist;  // 多媒体列表
     QString filem;           // 音乐文件路径  "F:\\qq音乐\\Music";
     QString pname, mname; // 歌手名字 和 歌曲名字
+    QString net_file, net_name; // 记录http 的路径 和 歌曲名字
     QStringList filemlist, nowplaylist, nowlist, buflist, list_col_table;  // 本地音乐文件路径, 当前播放音乐路径  当前的播放音乐名字（当放入songqueue 后可以clear）
     startbtn* playbt ,*volbt;                  // 音乐的播放按钮  音量按钮
     QLabel* musicL, *btnL ,*liftLabel ,*rightLabel, *PlayL;     // 用来显示当前播放歌曲  窗口按钮的封装 左时间显示 右边时间显示 播放控件的封装
@@ -91,18 +93,18 @@ private slots:
     void initPlayer(); // 用来根据 playf 来改变播放器图标
     void initPro(); // 初始化进度条
     void showPlayMedia();                                  //  将 当前播放歌的名称 在label 的 text 中显示
-    void  readmysql(QListWidget*, QString);   // 初始化音乐队列 (仅在开启播放器的调用)
+    void  readmysql(QListWidget*, QString, QString);   // 初始化音乐队列 (仅在开启播放器的调用)
     QStringList getfileName(const QString& file);  // 将所有的 歌的文件路径都记录到 QstrinList中
     void reinit();  // x 初始化
     void boxitem(int i, QString text, QString file, QString file_, QListWidget*, QVector<mybtn*>&, QVector<QListWidgetItem*>&); // 去在音乐列表里(QListWidget) 中实现一个item
-    void queuefun(QListWidget*, QString); // 封装 boxitem
+    void queuefun(QListWidget*, QString, QString); // 封装 boxitem
     QString getPName(QString filename); // 歌手名字
     QString getMName(QString filename); // 音乐名字
     QString getname(QString); // 获取当前音乐文件的文件名
     void showlocal(QListWidgetItem*);  // 显示本地音乐
     void localinit(QListWidget*); // 初始化本地音乐列表
     void l_updown(mybtn* btn); //点击时: 按钮的上下移动
-    void insert_nowplay(QString); // 插入到音乐队列中
+    void insert_nowplay(QString, QString); // 插入到音乐队列中
     void innowplay();   // 将当前播放音乐路径录入
     void deletenowplay(QString, int); // 删除队列item 并且删除mysql中的数据
     void reply(QNetworkReply*);  // 如果net_messager finish  判断是否载入 然后进行js
@@ -111,6 +113,7 @@ private slots:
     void reply2(QNetworkReply *reply);  // 如果net_messageer finish  判断是否载入 然后进行js
     void parseJson2(QString json);  //播放音乐解析Json
     void play_net_Music(int, int); //点击歌曲tableWidget item 播放音乐
+    bool is_net_music(QString); // 判断是不是 net_music
 
 public slots:
     void updatepos();   // 更新 播放时间

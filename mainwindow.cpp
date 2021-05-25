@@ -331,7 +331,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
             search(search_line ->text(), i);
         }
         tab_search ->setParent(mainmusic);
-        tab_search ->setGeometry(0, 0, mainmusic ->width(), mainmusic ->height());
+        tab_search ->setGeometry(0, 30, mainmusic ->width(), mainmusic ->height() - 30);
+        for(int i = 0; i < 5; ++i) {
+            tab_search ->setColumnWidth(i, mainmusic ->width() / 5 - 12);
+        }
         tab_search ->show();  // 显示搜索的结果
     });
 
@@ -598,18 +601,20 @@ void MainWindow::boxitem(int i, QString text, QString file, QString file_c, QLis
 
 
 // 加入到歌曲队列
-void MainWindow::queuefun(QListWidget* lw, QString file) {
+void MainWindow::queuefun(QListWidget* lw, QString file, QString m_name) {
+    bool is_http = is_net_music(file);
     int idx = Playlist ->isEmpty() ? -1 : Playlist ->currentIndex();
     if(file != "") {
-        Playlist ->insertMedia(idx + 1, QUrl::fromLocalFile(file));// 加入到多媒体 插入到下一首歌后面
+        if(!is_http) Playlist ->insertMedia(idx + 1, QUrl::fromLocalFile(file));// 加入到多媒体 插入到下一首歌后面
+        else Playlist ->insertMedia(idx + 1, QUrl(file));
         Player ->setPlaylist(Playlist);
         Playlist ->setCurrentIndex(idx + 1);  // 重新设置 多媒体位置
+        time ->setInterval(1000);
         reinit(); // 初始化
         Player ->play();
     }
 
-    QString mname = getname(file); // 获取歌曲名字
-    boxitem(idx + 1, mname, ":/coin/delete.png", ":/coin/delete_c.png", lw, vb, vi);  // 加入队列 增加 item
+    boxitem(idx + 1, m_name, ":/coin/delete.png", ":/coin/delete_c.png", lw, vb, vi);  // 加入队列 增加 item
 
      // 当点击vb[i] 时 删除此时的音乐 在音乐队列 和 mysql中
     if(is_delete) {
@@ -679,7 +684,7 @@ void MainWindow::localinit(QListWidget* lw) {
     for(int i = 0; i < filemlist.size(); ++i) {
         connect(l_vb[i], &mybtn::clicked, [=] () {
             l_updown(l_vb[i]);  // 按钮跳动
-            insert_nowplay(this ->filem + "/" + filemlist[i]);  // 插入到数据库 音乐队列中
+            insert_nowplay(this ->filem + "/" + filemlist[i], filemlist[i]);  // 插入到数据库 音乐队列中
             playf = false; //准备初始化 播放按钮
             initPlayer();   // 初始化播放按钮
         });
@@ -710,20 +715,18 @@ void MainWindow::innowplay() {
     // 将mysql中的音乐路径打印出来
     QSqlQuery selectq;
     selectq.exec("select * from nowplay;");
-    // 开始导入 音乐队列
+    // 开始导入 音乐队列(路径 和 歌名)
     while (selectq.next()) {
         this ->nowplaylist.push_back(selectq.value(0).value<QString>());
-//        qDebug() << selectq.value(0).value<QString>() << endl;
+        this ->nowlist.push_back(selectq.value(1).value<QString>());
+        qDebug() << "nowplayinit:   " << selectq.value(0).value<QString>() << "    "  << selectq.value(1).value<QString>() << endl;
+
     }
-    //将歌名导入
-    for(int i = 0; i < nowplaylist.size(); ++i) {
-        QString res = getname(nowplaylist[i]);
-        nowlist.push_back(res);
-    }
+
 
     //初始化播放列表
     for(int i = 0; i < nowplaylist.size(); ++i) {
-        readmysql(songqueue, nowplaylist[i]); // 开始将歌曲一个一个的加入播放队列
+        readmysql(songqueue, nowplaylist[i], nowlist[i]); // 开始将歌曲一个一个的加入播放队列
     }
 
     // 当音乐改变初始化 进度条 以及 显示音乐标签
@@ -734,8 +737,8 @@ void MainWindow::innowplay() {
 }
 
  // 插入到数据库 和 音乐队列中
-void MainWindow::insert_nowplay(QString name) {
-    QString m_name = getname(name); // 获得名字 然后搜索nowlist 是否已经存在这首歌
+void MainWindow::insert_nowplay(QString name, QString m_name) {
+    bool is_http = is_net_music(name);
     // 如果播放列表已经存在这首歌 那么只需要完成相对应的插入操作
     if (nowlist.count(m_name) != 0) {
         int idx = std::find(nowlist.begin(), nowlist.end(), m_name) - nowlist.begin(); // 找到这首歌的索引
@@ -746,12 +749,14 @@ void MainWindow::insert_nowplay(QString name) {
         // 重新插入歌曲
         if(idx == 0 && c_idx == Playlist ->mediaCount() - 2) {
             Playlist ->setCurrentIndex(Playlist ->currentIndex() - 1);
-            Playlist ->addMedia(QUrl::fromLocalFile(nowplaylist[idx]));
+            if(!is_http) Playlist ->addMedia(QUrl::fromLocalFile(nowplaylist[idx]));
+            else Playlist ->addMedia(QUrl(nowplaylist[idx]));
             Playlist ->removeMedia(0);
             Player ->play();    // 就是 qt player 这个机制过于博大精深 我吐了真的.......不得不这样写了
         } else {
             Playlist ->removeMedia(idx);
-            Playlist ->insertMedia(c_idx + 1, QUrl::fromLocalFile(nowplaylist[idx]));
+            if(!is_http) Playlist ->insertMedia(c_idx + 1, QUrl::fromLocalFile(nowplaylist[idx]));
+            else Playlist ->insertMedia(idx + 1, QUrl(nowplaylist[idx]));
             Playlist ->setCurrentIndex(c_idx + 1);
             Player ->play();
         }
@@ -777,14 +782,13 @@ void MainWindow::insert_nowplay(QString name) {
     is_delete = true;
     // 插入到数据库中
     QSqlQuery sql;
-    QString sfile = QString("insert into nowplay values (\"" + name + "\");"); // 插入从本地音乐目录路径
+    QString sfile = QString("insert into nowplay values (\"" + name + "\",\"" + m_name + "\");"); // 插入从本地音乐目录路径
     sql.exec(sfile); // 执行
-    QString mname = getname(name); // 获取歌曲名字
-    if(nowlist.count(mname) == 0) {
+    if(nowlist.count(m_name) == 0) {
         int idx = Playlist ->currentIndex(); // 插入到此时播放音乐的后面
         nowplaylist.insert(nowplaylist.begin() + idx + 1, name);
-        nowlist.insert(nowlist.begin() + idx + 1, mname);
-        queuefun(songqueue, name); //插入新的歌曲
+        nowlist.insert(nowlist.begin() + idx + 1, m_name);
+        queuefun(songqueue, name, m_name); //插入新的歌曲
     }
 }
 
@@ -799,17 +803,18 @@ QString MainWindow::getname(QString file) {
 }
 
 // 初始化音乐队列 (仅在开启播放器的调用)
-void MainWindow::readmysql(QListWidget* lw, QString file) {
+void MainWindow::readmysql(QListWidget* lw, QString file, QString name) {
     int idx = Playlist ->isEmpty() ? 0 : Playlist ->mediaCount();
+    is_net = is_net_music(file); // 判断是不是 网络音乐
     if(file != "") {
-        Playlist ->addMedia(QUrl::fromLocalFile(file));// 加入到多媒体 插入到下一首歌后面
+        if(!is_net) Playlist ->addMedia(QUrl::fromLocalFile(file));// 加入到多媒体 插入到下一首歌后面
+        else Playlist ->addMedia(QUrl(file));
         Playlist ->setCurrentIndex(0);  // 重新设置 多媒体位置
         Player ->setPlaylist(Playlist);
         reinit(); // 初始化
     }
 
-    QString mname = getname(file); // 获取歌曲名字
-    boxitem(idx, mname, ":/coin/delete.png", ":/coin/delete_c.png", lw, vb, vi);  // 加入队列 增加 item
+    boxitem(idx, name, ":/coin/delete.png", ":/coin/delete_c.png", lw, vb, vi);  // 加入队列 增加 item
 
      // 当点击vb[i] 时 删除此时的音乐 在音乐队列 和 mysql中
     if(!is_delete) {
@@ -845,6 +850,15 @@ void MainWindow::deletenowplay(QString file, int row) {
     return;
 }
 
+// 判断是否是网络音乐
+bool MainWindow::is_net_music(QString file) {
+    QString buf;
+    for(int i = 0; i < file.size(); ++i) {
+         buf += file[i];
+        if(buf == "http") return true;
+    }
+    return false;
+}
 
 
 // 搜索 text 通过 http网络, 给予finish 相应
@@ -1037,25 +1051,27 @@ void MainWindow::parseJson2(QString json) {
                            if(play_urlStr!="")
                            {
                                qDebug() << "line 1039: " << play_urlStr << endl;
-                               Player->setMedia(QUrl(play_urlStr));
-                               Player->play();
+                               net_file = play_urlStr;
+//                               Player ->setMedia(QUrl(play_urlStr));
+//                               Player->play();
                            }
                        }
                    }
-                   if(valuedataObject.contains("singername"))
+                   if(valuedataObject.contains("audio_name"))
                    {
-                       QJsonValue name_songer = valuedataObject.take("singername");
-                       if(name_songer.isString())
+                       QJsonValue play_name_value = valuedataObject.take("audio_name");
+                       if(play_name_value.isString())
                        {
-                           QString songer_name = name_songer.toString();    //歌曲名字
-                           if(songer_name!="")
+                           QString audio_name = play_name_value.toString();    //歌曲名字
+                           if(audio_name!="")
                            {
                                //显示
-                               qDebug()<<songer_name;
-//                                   ui->label_2->setText(audio_name);
+                               qDebug()<<audio_name;
+                               net_name = audio_name;
                            }
                        }
                    }
+                   insert_nowplay(net_file, net_name);  //将网络歌曲插入到队列
                }
                     //下一篇的歌词获取也是在这里添加代码
                     //图片显示代码在这里添加
