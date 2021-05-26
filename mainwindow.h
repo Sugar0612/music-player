@@ -28,6 +28,7 @@
 #include "mylab.h"
 #include "mylistwidget.h"
 #include "mytabwidget.h"
+#include "sign_in_win.h"
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -54,11 +55,15 @@ public:
      bool is_open = false; // 当为false 时 点击 打开列表 否则关闭列表
      bool is_delete = false; // 如果is_delete = false 那么调用readmysql 里面的deletenowplay 否则调用queuefun里面的deletenowplay
      bool is_net = false; // 根据 is_net 的不同判断是否时 网络音乐 从而实现不同的操作
+     bool sign_in = false; // 只有登录成功才可以听歌
      int flag = 0; // 当flag = 0 时 maxb 让窗口变大  flag = 1 时让窗口变成原来的样子
      int index = 0;  // 用来在tablewidget 中显示歌曲
 
 
-    mybtn *minb, *maxb, *clsb, *nextbt, *prevbt, *winicon, *listbtn, *btn_search;  // 窗口的最大化 最小化  关闭 下一首 上一首 的按钮 主窗口图标  音乐列表图标, 搜索按钮
+    long user_id; // 用户的id
+    sign_in_win* sign; // 登录界面
+    mybtn *minb, *maxb, *clsb, *nextbt, *prevbt, *winicon, *listbtn, *btn_search, *sign_in_btn;  // 窗口的最大化 最小化  关闭 下一首 上一首 的按钮 主窗口图标  音乐列表图标, 搜索按钮
+    //以及登录按钮
     QSqlDatabase db;   // 用来连接数据库 来调用歌曲
     QMediaPlayer *Player;    // 实现多媒体操控
     QMediaPlaylist *Playlist;  // 多媒体列表
@@ -67,7 +72,7 @@ public:
     QString net_file, net_name; // 记录http 的路径 和 歌曲名字
     QStringList filemlist, nowplaylist, nowlist, buflist, list_col_table;  // 本地音乐文件路径, 当前播放音乐路径  当前的播放音乐名字（当放入songqueue 后可以clear）
     startbtn* playbt ,*volbt;                  // 音乐的播放按钮  音量按钮
-    QLabel* musicL, *btnL ,*liftLabel ,*rightLabel, *PlayL;     // 用来显示当前播放歌曲  窗口按钮的封装 左时间显示 右边时间显示 播放控件的封装
+    QLabel* musicL, *btnL ,*liftLabel ,*rightLabel, *PlayL, *sign_L;     // 用来显示当前播放歌曲  窗口按钮的封装 左时间显示 右边时间显示 播放控件的封装 登录标签
     mytabwidget *mainmusic; // 设置音乐播放器 主窗口!
     mylab* mymusic, *mylist;   // 我的音乐的标签  我的歌单标签
     mylistwidget *musiclist ,*songlist, *songqueue;  // 喜爱歌单 和 本地音乐的创建  以及歌单
@@ -76,6 +81,7 @@ public:
     QWidget *musicTab, *lyricsTab;                                     //歌曲列表 和 歌词
     QLineEdit* search_line;   // 搜索框
     QTableWidget* tab_search;  //用来显示歌曲
+
 
     //http
     QNetworkAccessManager *net_manager, *network_manager2;;

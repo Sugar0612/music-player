@@ -80,6 +80,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
      search_line = new QLineEdit(btnL); // 搜索框
      search_line ->setGeometry(180, 18, 180, 40);
 
+     //登录按钮
+     sign_in_btn = new mybtn(":/coin/sign_in.png", ":/coin/sign_in_c.png");
+     sign_in_btn ->setParent(btnL);
+     sign_in_btn ->move(750, 15);
+
     //搜索按钮
      btn_search = new mybtn(":/coin/search.png", ":/coin/search.png");
      btn_search ->setParent(btnL);
@@ -149,11 +154,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     musicL ->setGeometry(30, 620,150, 50);
     musicL ->setFont(font);
 
+    // 登录标签
+    sign_L = new QLabel(btnL);
+    sign_L ->setText("未登录");
+    sign_L ->setGeometry(790, 20, 100, 30);
+    sign_L ->setFont(font);
+
 
     // 我的音乐 的列表 窗口
     musiclist = new mylistwidget(this);
     musiclist ->setGeometry(0, 110, 160, 100);
     musiclist ->setFocusPolicy(Qt::NoFocus); // 去掉虚线框
+
      // 歌单列表
     songlist = new mylistwidget(this);
     songlist ->setGeometry(0, 250, 160, 350);
@@ -188,6 +200,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     net_request = new QNetworkRequest();
     network_manager2 = new QNetworkAccessManager();
     network_request2 = new QNetworkRequest();
+
+    //sign init
+    sign = new sign_in_win();
 
     connect(minb, &QPushButton::clicked, [=](){
         showMinimized();
@@ -338,6 +353,20 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         tab_search ->show();  // 显示搜索的结果
     });
 
+    //登录按钮的响应
+    connect(sign_in_btn, &mybtn::clicked, [=] () {
+       sign ->show();
+    });
+
+    // 如果登录成功
+    connect(sign, &sign_in_win::sign_up_success, [=] () {
+         qDebug() << sign ->user_name ->text() << endl;
+         this ->user_id = sign ->user_id; // 导入id 开始导入对应的歌曲 和 歌单
+         sign_L ->setText(sign ->user_name ->text());
+
+    });
+
+    // 关于http 网络歌曲的 json 解析 和相应播放
     connect(net_manager, &QNetworkAccessManager::finished, this, &MainWindow::reply);
     connect(network_manager2, &QNetworkAccessManager::finished, this, &MainWindow::reply2);
     connect(tab_search, &QTableWidget::cellDoubleClicked, this, &MainWindow::play_net_Music);
@@ -549,7 +578,6 @@ void MainWindow::updatepos() {
 
 // 初始化X
 void MainWindow::reinit() {
-    time ->stop();
     this ->druntime = Player ->duration();   // 获得总时长
     this ->positontime = 0; // 初始化
     this -> X = 63;

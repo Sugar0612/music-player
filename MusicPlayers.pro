@@ -24,7 +24,9 @@ SOURCES += \
     startbtn.cpp\
     mylab.cpp\
     mylistwidget.cpp\
-    mytabwidget.cpp
+    mytabwidget.cpp\
+    sign_in_win.cpp\
+    sign_up_win.cpp
 
 HEADERS += \
     mainwindow.h\
@@ -32,7 +34,9 @@ HEADERS += \
     startbtn.h\
     mylab.h\
     mylistwidget.h\
-    mytabwidget.h
+    mytabwidget.h\
+    sign_in_win.h\
+    sign_up_win.h
 
 FORMS += \
     mainwindow.ui
