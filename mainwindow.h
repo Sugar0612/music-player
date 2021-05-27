@@ -60,10 +60,10 @@ public:
      int index = 0;  // 用来在tablewidget 中显示歌曲
 
 
-    long user_id; // 用户的id
+    int user_id = -1; // 用户的id
     sign_in_win* sign; // 登录界面
-    mybtn *minb, *maxb, *clsb, *nextbt, *prevbt, *winicon, *listbtn, *btn_search, *sign_in_btn;  // 窗口的最大化 最小化  关闭 下一首 上一首 的按钮 主窗口图标  音乐列表图标, 搜索按钮
-    //以及登录按钮
+    mybtn *minb, *maxb, *clsb, *nextbt, *prevbt, *winicon, *listbtn, *btn_search, *sign_in_btn, *local_btn;  // 窗口的最大化 最小化  关闭 下一首 上一首 的按钮 主窗口图标  音乐列表图标, 搜索按钮
+    //登录按钮  本地音乐添加窗口
     QSqlDatabase db;   // 用来连接数据库 来调用歌曲
     QMediaPlayer *Player;    // 实现多媒体操控
     QMediaPlaylist *Playlist;  // 多媒体列表
@@ -101,7 +101,7 @@ private slots:
     void showPlayMedia();                                  //  将 当前播放歌的名称 在label 的 text 中显示
     void  readmysql(QListWidget*, QString, QString);   // 初始化音乐队列 (仅在开启播放器的调用)
     QStringList getfileName(const QString& file);  // 将所有的 歌的文件路径都记录到 QstrinList中
-    void reinit();  // x 初始化
+    void reinit(int);  // x 初始化
     void boxitem(int i, QString text, QString file, QString file_, QListWidget*, QVector<mybtn*>&, QVector<QListWidgetItem*>&); // 去在音乐列表里(QListWidget) 中实现一个item
     void queuefun(QListWidget*, QString, QString); // 封装 boxitem
     QString getPName(QString filename); // 歌手名字
@@ -126,6 +126,8 @@ public slots:
 
 signals:
     void beginplay(); // 开始重新构造 进度条
+    void file_null(); // 当mfile为空时 触发
+    void is_sign_in(); //当登录成功 更新列表
 
 private:
     int X;    // 进度条总长度  防止出现越界情况

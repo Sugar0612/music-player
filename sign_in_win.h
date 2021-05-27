@@ -28,7 +28,7 @@ public:
     void user_sign_in(); // 登录响应
 
 signals:
-    void sign_up_success();  //登录成功触发信号
+    void sign_in_success();  //登录成功触发信号
 };
 
 #endif // SIGN_IN_WIN_H

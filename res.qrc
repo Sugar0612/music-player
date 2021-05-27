@@ -27,5 +27,7 @@
         <file>coin/search.png</file>
         <file>coin/sign_in.png</file>
         <file>coin/sign_in_c.png</file>
+        <file>coin/local_add.png</file>
+        <file>coin/local_add_c.png</file>
     </qresource>
 </RCC>

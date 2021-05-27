@@ -46,10 +46,10 @@ void sign_in_win::user_sign_in() {
     }
     if(user_id == -1) QMessageBox::information(this, "提示", "登录失败", QMessageBox::Ok);
     else {
-        qDebug() << "id:   "  << user_id << endl;
         QMessageBox::information(this, "提示", "登录成功", QMessageBox::Ok);
-        emit sign_up_success();
+        emit sign_in_success();
         this ->hide();
+        user_id = -1;
     }
 
 }
