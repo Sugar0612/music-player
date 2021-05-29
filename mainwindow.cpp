@@ -143,12 +143,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // 用来显示当前播放歌曲
     musicL = new QLabel(this);
-    musicL ->setGeometry(10, 640,150, 50);
+    musicL ->setGeometry(95, 620, 150, 50);
     musicL ->setFont(font);
 
     //用来显示当前播放歌曲的图片
     music_map = new QLabel(this);
-    music_map ->setGeometry(100, 630, 60, 60);
+    music_map ->setGeometry(20, 625, 60, 60);
 
 
     // 登录标签
@@ -188,8 +188,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // 显示搜索音乐的窗口
     tab_search = new QTableWidget();
+    tab_search ->setParent(this);
     tab_search ->setColumnCount(5);  // 设置列数
     tab_search ->setHorizontalHeaderLabels(list_col_table);// 设置列数的 名字
+    tab_search ->setGeometry(musiclist->width(), btnL ->height(), this ->width() - musiclist ->width(), this ->height() - btnL ->height() - 100);
+    tab_search ->stackUnder(songlist);
+    tab_search ->hide();
 
 
     //获得屏幕的分辨率
@@ -301,6 +305,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //点击 listbtn 出现 播放列表
     connect(listbtn, &QPushButton::clicked, [=] () {
+         songlist ->raise();
         if (!is_open) {       // 打开 播放列表
             is_open = true;
             QPropertyAnimation *an  = new QPropertyAnimation(songqueue, "geometry");
@@ -331,18 +336,19 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //当点击btn_search 开始搜索
     connect(btn_search, &mybtn::clicked, this, [=] () {
-        v_hash.clear();
-        v_id.clear();
-        index = 0;
-        for(int i = 1; i <= 10; ++i) {
-            search(search_line ->text(), i);
-        }
-        tab_search ->setParent(this);
-        tab_search ->setGeometry(musiclist->width(), btnL ->height(), this ->width() - musiclist ->width(), this ->height() - btnL ->height() - 100);
-        for(int i = 0; i < 5; ++i) {
-            tab_search ->setColumnWidth(i, (this ->width() - musiclist ->width()) / 5 - 12);
-        }
-        tab_search ->show();  // 显示搜索的结果
+        if(sign_in) {
+            v_hash.clear();
+            v_id.clear();
+            index = 0;
+            for(int i = 1; i <= 10; ++i) {
+                search(search_line ->text(), i);
+            }
+
+            for(int i = 0; i < 5; ++i) {
+                tab_search ->setColumnWidth(i, (this ->width() - musiclist ->width()) / 5 - 12);
+            }
+            tab_search ->show();  // 显示搜索的结果
+        } else QMessageBox::information(this, "提示", "请先登录", QMessageBox::Ok);
     });
 
     //登录按钮的响应
@@ -369,6 +375,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // 如果登录成功
     connect(sign, &sign_in_win::sign_in_success, [=] () {
+        // 登录成功~
+        sign_in = true;
          //先清空初始化整个播放器
          int songqueue_len = songqueue ->count();
          int local_w_len = local_w ->count();
@@ -484,10 +492,21 @@ QStringList MainWindow::getfileName(const QString& file) {
 
 void MainWindow::showPlayMedia() {
     reinit(1);  //初始化
+    //判断是不是net_music
+    int net_idx = Playlist->currentIndex();
+    bool net = is_net_music(nowplaylist[net_idx]);
+
     int idx = Playlist ->currentIndex();
     QString textL =  nowlist[idx];
-    network_request3->setUrl(QUrl(nowlist_im[idx]));
-    network_manager3->get(*network_request3);  // 反馈信号 准备解析json
+    //不同类型的 歌曲显示的名字不同
+    if(net) {
+        network_request3->setUrl(QUrl(nowlist_im[idx]));
+        network_manager3->get(*network_request3);  // 反馈信号 准备解析json
+    } else {
+        QPixmap pix; // 载入本地音乐的图片
+        pix.load(":/coin/songer.png");
+        music_map ->setPixmap(pix);
+    }
     musicL ->setText(getMName(textL) + "<br>" + getPName(textL));
     this ->setWindowTitle(textL);  // 用来 改变窗口的 名称
 }  // 改变label 显示新的 歌曲名字
@@ -496,6 +515,13 @@ void MainWindow::showPlayMedia() {
 
 
 void MainWindow::paintEvent(QPaintEvent *event) {
+    //绘制分割线
+    QPainter paint(this);
+    paint.setPen(QColor(Qt::black));
+    paint.drawLine(musiclist ->width(), btnL ->height(), musiclist ->width(), this ->height() - btnL->height() - 30);
+    paint.drawLine(0, this ->height() - btnL->height() - 30, this ->width(), this ->height() - btnL->height() - 30);
+
+
     Q_UNUSED(event);  // 避免编译器警告
     QPainter painter(this);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);  // 使用平滑的pixmap变换算法
@@ -664,7 +690,10 @@ void MainWindow::queuefun(QListWidget* lw, QString file, QString m_name) {
         if(!is_http) {
             Player ->play();
             reinit(1); // 初始化
-        } else reinit(0);
+        } else {
+
+            reinit(0);
+        }
     }
 
     boxitem(idx + 1, m_name, ":/coin/delete.png", ":/coin/delete_c.png", lw, vb, vi);  // 加入队列 增加 item
@@ -1346,6 +1375,7 @@ void MainWindow::changePro() {
     int currd = secondint1 % 10;
     current = QString("%0%1:%2%3").arg(curra) .arg(currb).arg(currc). arg(currd);
 }
+
 
 MainWindow::~MainWindow()
 {

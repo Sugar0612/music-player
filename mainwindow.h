@@ -23,6 +23,7 @@
 #include <QString>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QPaintEvent>
 #include "mybtn.h"
 #include"startbtn.h"
 #include "mylab.h"
