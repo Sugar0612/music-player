@@ -13,7 +13,7 @@ mybtn::mybtn(const QString a, const QString b){
 
     this -> setIcon(ap);                //设置图标
     this ->setFixedSize(ap.width(), ap.height()); //设置按钮大小
-    this ->setStyleSheet("QPushButton{border:0px}"); // 设置按钮风格
+    this ->setStyleSheet("QPushButton{border:0px;}"); // 设置按钮风格
     this ->setIconSize(QSize(ap.width(), ap.height())); // 设置图标大小
 }
 

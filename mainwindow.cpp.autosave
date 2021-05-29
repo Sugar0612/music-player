@@ -664,7 +664,10 @@ void MainWindow::queuefun(QListWidget* lw, QString file, QString m_name) {
         if(!is_http) {
             Player ->play();
             reinit(1); // 初始化
-        } else reinit(0);
+        } else {
+            
+            reinit(0);
+        }
     }
 
     boxitem(idx + 1, m_name, ":/coin/delete.png", ":/coin/delete_c.png", lw, vb, vi);  // 加入队列 增加 item

@@ -29,5 +29,6 @@
         <file>coin/sign_in_c.png</file>
         <file>coin/local_add.png</file>
         <file>coin/local_add_c.png</file>
+        <file>coin/songer.png</file>
     </qresource>
 </RCC>

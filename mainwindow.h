@@ -43,7 +43,6 @@ public:
     QVector<QListWidgetItem*> vi, l_vi = QVector<QListWidgetItem*>(10000, nullptr); // 用来存储 一首歌的item
     QVector<QString> v_hash, v_id; // 保存 hash 和 id 用来 播放歌曲
 
-
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
      QString current="00:00";   // 目前播放的时间
@@ -58,6 +57,7 @@ public:
      bool sign_in = false; // 只有登录成功才可以听歌
      int flag = 0; // 当flag = 0 时 maxb 让窗口变大  flag = 1 时让窗口变成原来的样子
      int index = 0;  // 用来在tablewidget 中显示歌曲
+     int emit_i = 0; // 如何 初始化完成 则为1 否则如果使用 本地音乐初始化 则为 0 可以调用 beginplay信号
 
 
     int user_id = -1; // 用户的id
@@ -69,23 +69,24 @@ public:
     QMediaPlaylist *Playlist;  // 多媒体列表
     QString filem;           // 音乐文件路径  "F:\\qq音乐\\Music";
     QString pname, mname; // 歌手名字 和 歌曲名字
-    QString net_file, net_name; // 记录http 的路径 和 歌曲名字
-    QStringList filemlist, nowplaylist, nowlist, buflist, list_col_table;  // 本地音乐文件路径, 当前播放音乐路径  当前的播放音乐名字（当放入songqueue 后可以clear）
+    QString net_file, net_name, net_image; // 记录http 的路径  歌曲名字 歌曲图片
+    QStringList filemlist, nowplaylist, nowlist, nowlist_im, buflist, list_col_table;  // 本地音乐文件路径, 当前播放音乐路径  当前的播放音乐名字（当放入songqueue 后可以clear）
     startbtn* playbt ,*volbt;                  // 音乐的播放按钮  音量按钮
-    QLabel* musicL, *btnL ,*liftLabel ,*rightLabel, *PlayL, *sign_L;     // 用来显示当前播放歌曲  窗口按钮的封装 左时间显示 右边时间显示 播放控件的封装 登录标签
-    mytabwidget *mainmusic; // 设置音乐播放器 主窗口!
+    QLabel* musicL, *music_map, *btnL ,*liftLabel ,*rightLabel, *PlayL, *sign_L;     // 用来显示当前播放歌曲 当前播放音乐的图标 窗口按钮的封装 左时间显示 右边时间显示 播放控件的封装 登录标签
+//    mytabwidget *mainmusic; // 设置音乐播放器 主窗口!
     mylab* mymusic, *mylist;   // 我的音乐的标签  我的歌单标签
-    mylistwidget *musiclist ,*songlist, *songqueue;  // 喜爱歌单 和 本地音乐的创建  以及歌单
+    mylistwidget *musiclist ,*songlist, *songqueue;  // 喜爱歌单 和 本地音乐的创建 播放队列列表
     mylistwidget* local_w;       //本地音乐列表
     QListWidgetItem* likemusiclist, *mylocalmusic;  // 喜爱的歌单 和 本地音乐
-    QWidget *musicTab, *lyricsTab;                                     //歌曲列表 和 歌词
+    /*QWidget *musicTab, *lyricsTab;    */                                 //歌曲列表 和 歌词
     QLineEdit* search_line;   // 搜索框
     QTableWidget* tab_search;  //用来显示歌曲
 
 
     //http
-    QNetworkAccessManager *net_manager, *network_manager2;;
-    QNetworkRequest *net_request, *network_request2;
+    QNetworkAccessManager *net_manager, *network_manager2, *network_manager3;
+    QNetworkRequest *net_request, *network_request2, *network_request3;
+
 
     //实现窗口的 任意拖动
     QPoint glbal_p, win_p;   // 用win_p - glabel_p 就是 偏移量
@@ -110,7 +111,7 @@ private slots:
     void showlocal(QListWidgetItem*);  // 显示本地音乐
     void localinit(QListWidget*); // 初始化本地音乐列表
     void l_updown(mybtn* btn); //点击时: 按钮的上下移动
-    void insert_nowplay(QString, QString); // 插入到音乐队列中
+    void insert_nowplay(QString, QString, QString); // 插入到音乐队列中
     void innowplay();   // 将当前播放音乐路径录入
     void deletenowplay(QString, int); // 删除队列item 并且删除mysql中的数据
     void reply(QNetworkReply*);  // 如果net_messager finish  判断是否载入 然后进行js
@@ -118,8 +119,10 @@ private slots:
     void parseJson(QString, int);  // 将歌曲放入 tableWidget
     void reply2(QNetworkReply *reply);  // 如果net_messageer finish  判断是否载入 然后进行js
     void parseJson2(QString json);  //播放音乐解析Json
+    void reply3(QNetworkReply *);
     void play_net_Music(int, int); //点击歌曲tableWidget item 播放音乐
     bool is_net_music(QString); // 判断是不是 net_music
+    QPixmap PixmapToRound(QPixmap&, int); // 将图片变成圆角
 
 public slots:
     void updatepos();   // 更新 播放时间
