@@ -147,8 +147,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     musicL ->setFont(font);
 
     //用来显示当前播放歌曲的图片
-    music_map = new QLabel(this);
+    music_map = new QPushButton(this);
     music_map ->setGeometry(20, 625, 60, 60);
+    music_map ->setFlat(true);
 
 
     // 登录标签
@@ -171,6 +172,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     songlist = new mylistwidget(this);
     songlist ->setGeometry(0, 250, 160, 350);
 
+
     //本地音乐列表
     mylocalmusic = new QListWidgetItem(musiclist);
     mylocalmusic ->setText("本地音乐");
@@ -192,13 +194,26 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     tab_search ->setColumnCount(5);  // 设置列数
     tab_search ->setHorizontalHeaderLabels(list_col_table);// 设置列数的 名字
     tab_search ->setGeometry(musiclist->width(), btnL ->height(), this ->width() - musiclist ->width(), this ->height() - btnL ->height() - 100);
-    tab_search ->stackUnder(songlist);
+    tab_search ->stackUnder(songlist); // 优先级在songlist 之下
     tab_search ->hide();
+
+
+    // 歌词地基窗口
+    lrc_w = new lrcwidget();
+    lrc_w ->setGeometry(-this ->width(), btnL ->height(), this ->width(), this ->height() - btnL ->height() - 100);
+
+
+    // 歌曲显示窗口
+    lrcwin = new QTabWidget(this);
+    lrcwin ->setGeometry(-this ->width(), btnL ->height(), this ->width(), this ->height() - btnL ->height() - 100);
+    lrcwin ->addTab(lrc_w,"");
+    lrcwin ->findChildren<QTabBar*>().at(0)->hide(); // 隐藏widget 上面的tab
+    lrcwin ->show();
 
 
     //获得屏幕的分辨率
     QDesktopWidget* desk = QApplication::desktop();
-    QRect apprect = desk ->screenGeometry();
+    desk ->screenGeometry();
 
     // http init
     net_manager = new QNetworkAccessManager();
@@ -305,7 +320,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //点击 listbtn 出现 播放列表
     connect(listbtn, &QPushButton::clicked, [=] () {
-         songlist ->raise();
+         songqueue ->raise();
+
         if (!is_open) {       // 打开 播放列表
             is_open = true;
             QPropertyAnimation *an  = new QPropertyAnimation(songqueue, "geometry");
@@ -398,6 +414,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
          sign_L ->setText(sign ->user_name ->text());
     });
 
+    // 点击 music_map 打开 歌词窗口
+    connect(music_map, &QPushButton::clicked, [=] () {
+        QPropertyAnimation *an = new QPropertyAnimation(lrcwin, "geometry");
+        an ->setDuration(300);
+        an ->setStartValue(QRect(lrcwin->x(), lrcwin ->y(), lrcwin->width(), lrcwin->height()));
+        an ->setEndValue(QRect(0, lrcwin->y(), lrcwin->width(), lrcwin->height()));
+        an ->setEasingCurve(QEasingCurve::Linear);
+        an ->start();
+    });
+
     // 关于http 网络歌曲的 json 解析 和相应播放
     connect(net_manager, &QNetworkAccessManager::finished, this, &MainWindow::reply);
     connect(network_manager2, &QNetworkAccessManager::finished, this, &MainWindow::reply2);
@@ -445,7 +471,6 @@ void MainWindow::initPro() {
             time -> setInterval(1000); // 1000 毫秒触发一次
             connect(time, &QTimer::timeout, this, [=]() {
                 updatepos();
-
                 // 当Player 播放完最后一首时 让palylist 的index 变成0, Qt的QPlayMedia 真是博大精深
                 if (Playlist ->currentIndex() == Playlist ->mediaCount() - 1 && Player ->duration() / 1000 == this ->positontime / 1000) {
                     Playlist ->setCurrentIndex(0);
@@ -505,7 +530,7 @@ void MainWindow::showPlayMedia() {
     } else {
         QPixmap pix; // 载入本地音乐的图片
         pix.load(":/coin/songer.png");
-        music_map ->setPixmap(pix);
+        music_map ->setIcon(QIcon(pix));
     }
     musicL ->setText(getMName(textL) + "<br>" + getPName(textL));
     this ->setWindowTitle(textL);  // 用来 改变窗口的 名称
@@ -592,6 +617,7 @@ void MainWindow::paintEvent(QPaintEvent *event) {
 
 void MainWindow::updatepos() {
     // druntime: 总进度 positontime: 当前进度
+    qDebug() << "this music durtime:  " << Player ->duration() << endl;
     this ->positontime += 1000; // 每过一秒 加一秒
     float a;
     a = (float)positontime / (float)Player ->duration();
@@ -857,7 +883,7 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name) {
                 Playlist ->addMedia(QUrl::fromLocalFile(nowplaylist[idx]));
                 QPixmap pix; // 载入本地音乐的图片
                 pix.load(":/coin/songer.png");
-                music_map ->setPixmap(pix);
+                music_map ->setIcon(pix);
             } else {
                 Playlist ->addMedia(QUrl(nowplaylist[idx]));
                 network_request3->setUrl(QUrl(p_name));
@@ -871,7 +897,7 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name) {
                 Playlist ->insertMedia(c_idx + 1, QUrl::fromLocalFile(nowplaylist[idx]));
                 QPixmap pix; // 载入本地音乐的图片
                 pix.load(":/coin/songer.png");
-                music_map ->setPixmap(pix);
+                music_map ->setIcon(pix);
             } else {
                 Playlist ->insertMedia(idx + 1, QUrl(nowplaylist[idx]));
                 network_request3->setUrl(QUrl(p_name));
@@ -910,7 +936,7 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name) {
     if(nowlist.count(m_name) == 0) {
         QPixmap pix; // 载入本地音乐的图片
         pix.load(":/coin/songer.png");
-        music_map ->setPixmap(pix);
+        music_map ->setIcon(pix);
 
         int idx = Playlist ->currentIndex(); // 插入到此时播放音乐的后面
         nowplaylist.insert(nowplaylist.begin() + idx + 1, name);
@@ -1258,11 +1284,24 @@ void MainWindow::reply3(QNetworkReply *reply)
         {
 
             QByteArray bytes = reply->readAll();  //获取字节
-            //由于获取的图片像素过大，而我们显示的图片变小，所以我们需要压缩图片的像素，所以我们把图片压缩为(radius * radius) * 2;
-            QPixmap pixmap, s_pix;
+            //由于获取的图片像素过大，而我们显示的图片很小，所以我们需要压缩图片的像素，我们label的大小为45*45，所以我们把图片压缩为45*45
+            QSize size(50, 50);
+            QBitmap bit(size);
+            QPixmap pixmap, s_pix, w_l_pixmap;
             pixmap.loadFromData(bytes);
-            s_pix = PixmapToRound(pixmap, 30);  // 将图片变成圆角
-            music_map ->setPixmap(s_pix);
+            w_l_pixmap.loadFromData(bytes);
+            w_l_pixmap = PixmapToRound(w_l_pixmap, 180);
+
+            // 歌曲图标
+            s_pix = PixmapToRound(pixmap, 30);
+            music_map ->setFixedSize(s_pix.width(), s_pix.height());
+            music_map ->setIconSize(QSize(s_pix.width(), s_pix.height()));
+            music_map ->setIcon(QIcon(s_pix));
+            music_map ->setStyleSheet("QPushButton{border: 0px;}");
+            music_map ->show();
+
+            // 歌词窗口 绘制图片
+            lrc_w->l->setPixmap(w_l_pixmap);
         }
         else
         {

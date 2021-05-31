@@ -28,8 +28,8 @@
 #include"startbtn.h"
 #include "mylab.h"
 #include "mylistwidget.h"
-#include "mytabwidget.h"
 #include "sign_in_win.h"
+#include "lrcwidget.h"
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -73,7 +73,7 @@ public:
     QString net_file, net_name, net_image; // 记录http 的路径  歌曲名字 歌曲图片
     QStringList filemlist, nowplaylist, nowlist, nowlist_im, buflist, list_col_table;  // 本地音乐文件路径, 当前播放音乐路径  当前的播放音乐名字（当放入songqueue 后可以clear）
     startbtn* playbt ,*volbt;                  // 音乐的播放按钮  音量按钮
-    QLabel* musicL, *music_map, *btnL ,*liftLabel ,*rightLabel, *PlayL, *sign_L;     // 用来显示当前播放歌曲 当前播放音乐的图标 窗口按钮的封装 左时间显示 右边时间显示 播放控件的封装 登录标签
+    QLabel* musicL, *btnL ,*liftLabel ,*rightLabel, *PlayL, *sign_L;     // 用来显示当前播放歌曲  窗口按钮的封装 左时间显示 右边时间显示 播放控件的封装 登录标签
 //    mytabwidget *mainmusic; // 设置音乐播放器 主窗口!
     mylab* mymusic, *mylist;   // 我的音乐的标签  我的歌单标签
     mylistwidget *musiclist ,*songlist, *songqueue;  // 喜爱歌单 和 本地音乐的创建 播放队列列表
@@ -81,7 +81,11 @@ public:
     QListWidgetItem* likemusiclist, *mylocalmusic;  // 喜爱的歌单 和 本地音乐
     /*QWidget *musicTab, *lyricsTab;    */                                 //歌曲列表 和 歌词
     QLineEdit* search_line;   // 搜索框
-    QTableWidget* tab_search;  //用来显示歌曲
+    QTableWidget *tab_search;  //用来显示歌曲
+    QTabWidget *lrcwin; //  歌词显示窗口
+    QPushButton *music_map;  //当前播放音乐的图标
+    lrcwidget* lrc_w; // 歌词窗口(地基)
+    QListWidget* lrc_l; // 歌词显示
 
 
     //http

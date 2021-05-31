@@ -21,22 +21,24 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp\
     mybtn.cpp\
+    mywidget.cpp \
     startbtn.cpp\
     mylab.cpp\
     mylistwidget.cpp\
-    mytabwidget.cpp\
     sign_in_win.cpp\
-    sign_up_win.cpp
+    sign_up_win.cpp\
+    lrcwidget.cpp
 
 HEADERS += \
     mainwindow.h\
     mybtn.h\
+    mywidget.h \
     startbtn.h\
     mylab.h\
     mylistwidget.h\
-    mytabwidget.h\
     sign_in_win.h\
-    sign_up_win.h
+    sign_up_win.h\
+    lrcwidget.h
 
 FORMS += \
     mainwindow.ui
