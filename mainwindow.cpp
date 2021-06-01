@@ -572,16 +572,19 @@ void MainWindow::showPlayMedia() {
     int net_idx = Playlist->currentIndex();
     bool net = is_net_music(nowplaylist[net_idx]);
 
+
     int idx = Playlist ->currentIndex();
     QString textL =  nowlist[idx];
     //不同类型的 歌曲显示的名字不同
     if(net) {
         network_request3->setUrl(QUrl(nowlist_im[idx]));
         network_manager3->get(*network_request3);  // 反馈信号 准备解析json
+        buildlrc(nowlist_lrc[idx]);
     } else {
         QPixmap pix; // 载入本地音乐的图片
         pix.load(":/coin/songer.png");
         music_map ->setIcon(QIcon(pix));
+
     }
     musicL ->setText(getMName(textL) + "<br>" + getPName(textL));
     this ->setWindowTitle(textL);  // 用来 改变窗口的 名称
@@ -897,15 +900,17 @@ void MainWindow::innowplay() {
     // 开始导入 音乐队列(路径 和 歌名)
     while (selectq.next()) {
         if (user_id == selectq.value(0).value<int>()) {
-            this ->nowplaylist.push_back(selectq.value(1).value<QString>());
-            this ->nowlist.push_back(selectq.value(2).value<QString>());
-            this ->nowlist_im.push_back(selectq.value(3).value<QString>());
+            this ->nowplaylist.push_back(selectq.value(1).value<QString>()); // 歌曲路径
+            this ->nowlist.push_back(selectq.value(2).value<QString>()); // 歌曲名字
+            this ->nowlist_im.push_back(selectq.value(3).value<QString>()); // 歌曲图片
+            this ->nowlist_lrc.push_back(selectq.value(4).value<QString>()); // 歌曲歌词
         }
     }
 
     //初始化播放列表
     for(int i = 0; i < nowplaylist.size(); ++i) {
         readmysql(songqueue, nowplaylist[i], nowlist[i]); // 开始将歌曲一个一个的加入播放队列
+        buildlrc(nowlist_lrc[i]);
     }
 
     // 当音乐改变初始化 进度条 以及 显示音乐标签
@@ -963,7 +968,6 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
         vi.erase(vi.begin() + idx, vi.begin() + idx + 1);
 
         buildlrc(lrc_name);
-        initlrc_win();
         boxitem(c_idx + 1, nowlist[idx], ":/coin/delete.png", ":/coin/delete_c.png", songqueue, vb, vi);  // 加入队列 增加 item
 
         //重新插入nowlist nowplaylist nowlist_im
@@ -997,11 +1001,12 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
             network_request3->setUrl(QUrl(p_name));
             network_manager3->get(*network_request3);  // 反馈信号 准备解析json
         }
-
+        qDebug()<<"lrc out " << endl;
         int idx = Playlist ->currentIndex(); // 插入到此时播放音乐的后面
         nowplaylist.insert(nowplaylist.begin() + idx + 1, name);
         nowlist.insert(nowlist.begin() + idx + 1, m_name);
         nowlist_im.insert(nowlist_im.begin() + idx + 1, p_name);
+        nowlist_lrc.insert(nowlist_lrc.begin() + idx + 1, lrc_name);
         queuefun(songqueue, name, m_name); //插入新的歌曲
 
 //        // 插入歌词
@@ -1340,7 +1345,6 @@ void MainWindow::parseJson2(QString json) {
                                    {	//将整个歌词给s
                                        QString s = play_lrcStr;
                                        buildlrc(s);
-                                       initlrc_win();
                                        p_lrcit = lrcMap.begin() - 1;
                                    }
                                    else
@@ -1440,6 +1444,12 @@ void MainWindow::buildlrc(QString s) {
     lrc_idx.clear();
     idd = 0;
 
+    // 本地音乐处理
+    if(s == "本地音乐暂无歌词") {
+        lrcMap[0] = s;
+        lrc_idx[0] = 0;
+    }
+
     QStringList s1 = s.split("\n");
     for (int i = 3; i < s1.size() - 1; i++)
     {
@@ -1465,6 +1475,7 @@ void MainWindow::buildlrc(QString s) {
             lrc_idx[lrctime] = idd++;
         }
     }
+    initlrc_win();
 }
 
 
