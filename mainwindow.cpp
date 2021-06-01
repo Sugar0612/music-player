@@ -418,12 +418,23 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // 点击 music_map 打开 歌词窗口
     connect(music_map, &QPushButton::clicked, [=] () {
-        QPropertyAnimation *an = new QPropertyAnimation(lrcwin, "geometry");
-        an ->setDuration(300);
-        an ->setStartValue(QRect(lrcwin->x(), lrcwin ->y(), lrcwin->width(), lrcwin->height()));
-        an ->setEndValue(QRect(0, lrcwin->y(), lrcwin->width(), lrcwin->height()));
-        an ->setEasingCurve(QEasingCurve::Linear);
-        an ->start();
+        if(!lrc_open) {
+            lrc_open = true;
+            QPropertyAnimation *an = new QPropertyAnimation(lrcwin, "geometry");
+            an ->setDuration(300);
+            an ->setStartValue(QRect(-lrcwin ->width(), lrcwin ->y(), lrcwin->width(), lrcwin->height()));
+            an ->setEndValue(QRect(0, lrcwin->y(), lrcwin->width(), lrcwin->height()));
+            an ->setEasingCurve(QEasingCurve::Linear);
+            an ->start();
+        } else {
+            lrc_open = false;
+            QPropertyAnimation *an = new QPropertyAnimation(lrcwin, "geometry");
+            an ->setDuration(300);
+            an ->setStartValue(QRect(0, lrcwin->y(), lrcwin->width(), lrcwin->height()));
+            an ->setEndValue(QRect(-lrcwin ->width(), lrcwin ->y(), lrcwin->width(), lrcwin->height()));
+            an ->setEasingCurve(QEasingCurve::Linear);
+            an ->start();
+        }
     });
 
     // 关于http 网络歌曲的 json 解析 和相应播放
@@ -475,12 +486,11 @@ void MainWindow::initPro() {
             connect(time, &QTimer::timeout, this, [=]() {
                 // 歌词动态滚动
                 if(lrcMap.size() != 0) {
-                    qDebug() << "se:   " << this ->positontime << endl;
                     for(QMap<int, QString>::iterator j = lrcMap.begin(); j != lrcMap.end(); ++j) {
                         bool is_back = false; // is_back 为true时 退出
                         if(j != lrcMap.end() && j.key() <= this ->positontime + 1000 && j.key() >= this ->positontime - 1000) {
                             qDebug() << j.key() << endl;
-                            QFont font("幼圆"),p_font("幼圆"); // font 目前播放的歌词 p_font之前播放的歌词 恢复原样
+                            QFont font("幼圆"), p_font("幼圆"); // font 目前播放的歌词 p_font之前播放的歌词 恢复原样
                             // 放大正在播放的歌词
                             font.setWeight(90);
                             font.setPointSize(15);
@@ -848,7 +858,7 @@ void MainWindow::localinit(QListWidget* lw) {
     for(int i = 0; i < filemlist.size(); ++i) {
         connect(l_vb[i], &mybtn::clicked, [=] () {
             l_updown(l_vb[i]);  // 按钮跳动
-            insert_nowplay(this ->filem + "/" + filemlist[i], filemlist[i], ":/coin/songer.png");  // 插入到数据库 音乐队列中
+            insert_nowplay(this ->filem + "/" + filemlist[i], filemlist[i], ":/coin/songer.png", "本地音乐暂无歌词");  // 插入到数据库 音乐队列中
             playf = false; //准备初始化 播放按钮
             reinit(1);
             if(emit_i == 0) {
@@ -906,7 +916,7 @@ void MainWindow::innowplay() {
 }
 
  // 插入到数据库 和 音乐队列中
-void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name) {
+void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QString lrc_name) {
     bool is_http = is_net_music(name);
     QString user_id_qstr = QString("%0").arg(user_id);
     // 如果播放列表已经存在这首歌 那么只需要完成相对应的插入操作
@@ -916,7 +926,7 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name) {
 
         if(Playlist ->currentIndex() == idx) return; // 如果你想插入的歌就是 现在的歌 那么不需要插入
 
-        // 重新插入歌曲
+       // 重新插入歌曲
         if(idx == 0 && c_idx == Playlist ->mediaCount() - 2) {
             Playlist ->setCurrentIndex(Playlist ->currentIndex() - 1);
             if(!is_http) {
@@ -951,6 +961,9 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name) {
         songqueue ->takeItem(idx);
         vb.erase(vb.begin() + idx, vb.begin() + idx + 1);
         vi.erase(vi.begin() + idx, vi.begin() + idx + 1);
+
+        buildlrc(lrc_name);
+        initlrc_win();
         boxitem(c_idx + 1, nowlist[idx], ":/coin/delete.png", ":/coin/delete_c.png", songqueue, vb, vi);  // 加入队列 增加 item
 
         //重新插入nowlist nowplaylist nowlist_im
@@ -960,10 +973,12 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name) {
         nowlist.erase(nowlist.begin() + idx, nowlist.begin() + idx + 1);
         nowplaylist.erase(nowplaylist.begin() + idx, nowplaylist.begin() + idx + 1);
         nowlist_im.erase(nowlist_im.begin()+idx, nowlist_im.begin() + idx + 1);
+        nowlist_lrc.erase(nowlist_lrc.begin() + idx, nowlist.begin() + idx + 1);
 
         nowlist.insert(nowlist.begin() + c_idx + 1, nowlist_s);
         nowplaylist.insert(nowplaylist.begin() + c_idx + 1, nowplaylist_s);
         nowlist_im.insert(nowlist_im.begin() + c_idx + 1, nowlist_im_s);
+        nowlist_lrc.insert(nowlist_lrc.begin() + idx + 1, lrc_name);
         return;
     }
 
@@ -971,18 +986,27 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name) {
     is_delete = true;
     // 插入到数据库中
     QSqlQuery sql;
-    QString sfile = QString("insert into nowplay values(" + user_id_qstr + ",\"" + name + "\"," + "\"" + m_name + "\"" + ",\"" + p_name + "\")"); // 插入从本地音乐目录路径
+    QString sfile = QString("insert into nowplay values(" + user_id_qstr + ",\"" + name + "\"," + "\"" + m_name + "\"" + ",\"" + p_name + "\"" + ",\"" + lrc_name + "\")"); // 插入从本地音乐目录路径
     sql.exec(sfile); // 执行
     if(nowlist.count(m_name) == 0) {
-        QPixmap pix; // 载入本地音乐的图片
-        pix.load(":/coin/songer.png");
-        music_map ->setIcon(pix);
+        if(!is_http) {
+            QPixmap pix; // 载入本地音乐的图片
+            pix.load(":/coin/songer.png");
+            music_map ->setIcon(pix);
+        } else  {
+            network_request3->setUrl(QUrl(p_name));
+            network_manager3->get(*network_request3);  // 反馈信号 准备解析json
+        }
 
         int idx = Playlist ->currentIndex(); // 插入到此时播放音乐的后面
         nowplaylist.insert(nowplaylist.begin() + idx + 1, name);
         nowlist.insert(nowlist.begin() + idx + 1, m_name);
         nowlist_im.insert(nowlist_im.begin() + idx + 1, p_name);
         queuefun(songqueue, name, m_name); //插入新的歌曲
+
+//        // 插入歌词
+//        buildlrc(lrc_name);
+//        initlrc_win();
     }
 }
 
@@ -1309,37 +1333,13 @@ void MainWindow::parseJson2(QString json) {
                            if (play_url_value.isString())
                            {
                                QString play_lrcStr = play_url_value.toString();
+                               net_lrc = play_lrcStr; // 保存http 歌词
                                if (play_urlStr != "")
                                {
                                    if (play_lrcStr != "")
                                    {	//将整个歌词给s
                                        QString s = play_lrcStr;
-                                       QStringList s1 = s.split("\n");
-                                       lrcMap.clear();
-                                       for (int i = 3; i < s1.size() - 1; i++)
-                                       {
-                                           QString ss1 = s1[i];
-                                           //歌词中开头有一些是无意义的字符，用正则表达式判断，只保存包含有时间戳的字符串。
-                                           QRegExp ipRegExp = QRegExp("\\[\\d\\d\\S\\d\\d\\S\\d\\d\\]");
-                                           //若包含则返回flase
-                                           bool match = ipRegExp.indexIn(ss1);
-                                           if (match == false)
-                                           {
-                                               //时间解析格式(分*60+秒)*100+厘秒
-                                               int s_1 = ss1.mid(1, 2).toInt();      //分
-                                               int s_2 = ss1.mid(4, 2).toInt();      //秒
-                                               int s_3 = ss1.mid(7, 2).toInt();      //厘秒
-                                               int s_count = ((s_1 * 60 + s_2) * 100 + s_3) * 10;   //毫秒换算
-
-                                               int lrctime = s_count;
-                                               QString lrcstr = ss1.mid(10);  // 歌词载入
-//                                               qDebug() << "durtion: " << s_count << "  " << lrcstr << endl;
-                                               //用Qmap来保存
-
-                                               lrcMap[lrctime] = lrcstr;
-                                               lrc_idx[lrctime] = idd++;
-                                           }
-                                       }
+                                       buildlrc(s);
                                        initlrc_win();
                                        p_lrcit = lrcMap.begin() - 1;
                                    }
@@ -1351,7 +1351,7 @@ void MainWindow::parseJson2(QString json) {
                            }
                        }
 
-                   insert_nowplay(net_file, net_name, net_image);  //将网络歌曲插入到队列
+                   insert_nowplay(net_file, net_name, net_image, net_lrc);  //将网络歌曲插入到队列
                }
                     //下一篇的歌词获取也是在这里添加代码
                else {
@@ -1401,7 +1401,8 @@ void MainWindow::reply3(QNetworkReply *reply)
 
 // 初始化歌词播放
 void MainWindow::initlrc_win() {
-    // 初始化roll_cnt roll
+    // 初始化roll_cnt roll lrc_itm
+    lrc_itm.clear();
     roll_cnt = 0;
     roll = 0;
 
@@ -1432,8 +1433,44 @@ void MainWindow::initlrc_win() {
     lrc_l ->show();
 }
 
+// 解析构建歌词
+void MainWindow::buildlrc(QString s) {
+    // 初始化
+    lrcMap.clear();
+    lrc_idx.clear();
+    idd = 0;
+
+    QStringList s1 = s.split("\n");
+    for (int i = 3; i < s1.size() - 1; i++)
+    {
+        QString ss1 = s1[i];
+        //歌词中开头有一些是无意义的字符，用正则表达式判断，只保存包含有时间戳的字符串。
+        QRegExp ipRegExp = QRegExp("\\[\\d\\d\\S\\d\\d\\S\\d\\d\\]");
+        //若包含则返回flase
+        bool match = ipRegExp.indexIn(ss1);
+        if (match == false)
+        {
+            //时间解析格式(分*60+秒)*100+厘秒
+            int s_1 = ss1.mid(1, 2).toInt();      //分
+            int s_2 = ss1.mid(4, 2).toInt();      //秒
+            int s_3 = ss1.mid(7, 2).toInt();      //厘秒
+            int s_count = ((s_1 * 60 + s_2) * 100 + s_3) * 10;   //毫秒换算
+
+            int lrctime = s_count;
+            QString lrcstr = ss1.mid(10);  // 歌词载入
+//                                               qDebug() << "durtion: " << s_count << "  " << lrcstr << endl;
+            //用Qmap来保存
+
+            lrcMap[lrctime] = lrcstr;
+            lrc_idx[lrctime] = idd++;
+        }
+    }
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 void MainWindow::mousePressEvent(QMouseEvent * e) {
     // 音量进度条
