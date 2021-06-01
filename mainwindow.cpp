@@ -474,24 +474,42 @@ void MainWindow::initPro() {
             time -> setInterval(1000); // 1000 毫秒触发一次
             connect(time, &QTimer::timeout, this, [=]() {
                 // 歌词动态滚动
-                if(!it_lrc->isNull()) {
-                    qDebug() << it_lrc.key() << endl;
-                    while(it_lrc != lrcMap.end() && it_lrc.key() <= this ->positontime + 500 && it_lrc.key() >= this ->positontime - 500) {
-                        qDebug() << "__in:    " << it_lrc.value() << endl;
-                        QFont font("幼圆");
-                        font.setWeight(100);
-                        font.setPointSize(13);
-//                        int idx = lrc_idx[it.value()];
-//                        qDebug() << "idx is::  "  << idx << endl;
-                        lrc_l ->verticalScrollBar() ->setValue(roll);
-//                        lrc_itm[idx] ->setFont(font);
-//                        lrc_itm[idx] ->setText("outout!");
-                        it_lrc++;
-                        roll_cnt++;  // 次数累加
-                        if(roll_cnt >= 4) roll++; // 次数到达 允许下滚
+                if(lrcMap.size() != 0) {
+                    qDebug() << "se:   " << this ->positontime << endl;
+                    for(QMap<int, QString>::iterator j = lrcMap.begin(); j != lrcMap.end(); ++j) {
+                        bool is_back = false; // is_back 为true时 退出
+                        if(j != lrcMap.end() && j.key() <= this ->positontime + 1000 && j.key() >= this ->positontime - 1000) {
+                            qDebug() << j.key() << endl;
+                            QFont font("幼圆"),p_font("幼圆"); // font 目前播放的歌词 p_font之前播放的歌词 恢复原样
+                            // 放大正在播放的歌词
+                            font.setWeight(90);
+                            font.setPointSize(15);
+
+                            //恢复已经放大过的歌词
+                            p_font.setWeight(50);
+                            p_font.setPointSize(13);
+
+                            int idx = lrc_idx[j.key()]; // 找到item
+                            int p_idx = p_lrcit == lrcMap.begin() - 1 ? -1 : lrc_idx[p_lrcit.key()]; // 找到上一个item
+                            qDebug() << "idx is::  "  << idx << endl;
+
+                            //恢复之前歌词字体大小
+                            if(p_idx >= 0) {
+                                lrc_itm[p_idx] ->setFont(p_font);
+                                lrc_itm[p_idx] ->setText(p_lrcit.value());
+                            }
+                            //新的 p_lrcit
+                            p_lrcit = j;
+
+                            //滚动播放歌词
+                            if(idx >= 4) lrc_l ->verticalScrollBar() ->setValue(idx - 4);
+                            lrc_itm[idx] ->setFont(font);
+                            lrc_itm[idx] ->setText(j.value());
+                            is_back = true;
+                        }
+                        if(is_back) break;
                     }
                 }
-
                 //进度条更新
                 updatepos();
                 // 当Player 播放完最后一首时 让palylist 的index 变成0, Qt的QPlayMedia 真是博大精深
@@ -640,7 +658,6 @@ void MainWindow::paintEvent(QPaintEvent *event) {
 
 void MainWindow::updatepos() {
     // druntime: 总进度 positontime: 当前进度
-    qDebug() << "this music durtime:  " << Player ->duration() << endl;
     this ->positontime += 1000; // 每过一秒 加一秒
     float a;
     a = (float)positontime / (float)Player ->duration();
@@ -1246,7 +1263,6 @@ void MainWindow::parseJson2(QString json) {
                            play_urlStr = play_url_value.toString();      //歌曲的url
                            if(play_urlStr!="")
                            {
-                               qDebug() << "line 1039: " << play_urlStr << endl;
                                net_file = play_urlStr;
 //                               Player ->setMedia(QUrl(play_urlStr));
 //                               Player->play();
@@ -1286,6 +1302,7 @@ void MainWindow::parseJson2(QString json) {
                        }
                    }
                    // 歌词显示
+                   idd = 0; // 初始化 lrc_itm 的索引
                    if (valuedataObject.contains("lyrics")) //lrc
                        {
                            QJsonValue play_url_value = valuedataObject.take("lyrics");
@@ -1320,13 +1337,11 @@ void MainWindow::parseJson2(QString json) {
                                                //用Qmap来保存
 
                                                lrcMap[lrctime] = lrcstr;
-//                                               lrc_idx[lrcstr] = i - 3;
-//                                               qDebug() << i - 3 << endl;
-                                               initlrc_win();
+                                               lrc_idx[lrctime] = idd++;
                                            }
                                        }
-                                       it_lrc = lrcMap.begin();
-                                       it_lrc++;
+                                       initlrc_win();
+                                       p_lrcit = lrcMap.begin() - 1;
                                    }
                                    else
                                    {
@@ -1405,10 +1420,12 @@ void MainWindow::initlrc_win() {
         QFont font;
         font.setFamily("幼圆");
         font.setPointSize(13);
+        font.setWeight(50);
+
         QString lrc = it.value();
         QListWidgetItem *lrc_it = new QListWidgetItem(it.value(), lrc_l);
         lrc_it ->setFont(font);
-//        lrc_itm.push_back(lrc_it);
+        lrc_itm.push_back(lrc_it);
         lrc_l ->addItem(lrc_it);
         it++;
     }

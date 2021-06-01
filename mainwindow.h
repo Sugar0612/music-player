@@ -41,10 +41,11 @@ class MainWindow : public QMainWindow
 public:
     bool f;
     QVector<mybtn*> vb, l_vb = QVector<mybtn*>(10000, nullptr);  // 用来存储 音乐item 里的按钮vb
-    QVector<QListWidgetItem*> vi, l_vi = QVector<QListWidgetItem*>(10000, nullptr); // 用来存储 一首歌的item
+    QVector<QListWidgetItem*> vi, l_vi = QVector<QListWidgetItem*>(10000, nullptr), lrc_itm; // 用来存储 一首歌的item
     QVector<QString> v_hash, v_id; // 保存 hash 和 id 用来 播放歌曲
     QMap<int, QString> lrcMap; // 歌词保存
-    QMap<int, QString>::iterator it_lrc; // 歌词保存的it
+    QMap<int, int> lrc_idx; // 存储 itme idx
+    QMap<int, QString>::iterator p_lrcit; // 歌词上一个保存的it
 
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
@@ -62,6 +63,7 @@ public:
      int index = 0;  // 用来在tablewidget 中显示歌曲
      int emit_i = 0; // 如何 初始化完成 则为1 否则如果使用 本地音乐初始化 则为 0 可以调用 beginplay信号
      int roll, roll_cnt; // roll 代表真实歌词下滚行数, 而 roll_cnt 代表歌词读取次数 当达到4次时 才允许歌词下滚
+     int idd; // 歌词item idx
 
 
     int user_id = -1; // 用户的id
