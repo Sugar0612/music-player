@@ -43,6 +43,8 @@ public:
     QVector<mybtn*> vb, l_vb = QVector<mybtn*>(10000, nullptr);  // 用来存储 音乐item 里的按钮vb
     QVector<QListWidgetItem*> vi, l_vi = QVector<QListWidgetItem*>(10000, nullptr); // 用来存储 一首歌的item
     QVector<QString> v_hash, v_id; // 保存 hash 和 id 用来 播放歌曲
+    QMap<int, QString> lrcMap; // 歌词保存
+    QMap<int, QString>::iterator it_lrc; // 歌词保存的it
 
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
@@ -59,6 +61,7 @@ public:
      int flag = 0; // 当flag = 0 时 maxb 让窗口变大  flag = 1 时让窗口变成原来的样子
      int index = 0;  // 用来在tablewidget 中显示歌曲
      int emit_i = 0; // 如何 初始化完成 则为1 否则如果使用 本地音乐初始化 则为 0 可以调用 beginplay信号
+     int roll, roll_cnt; // roll 代表真实歌词下滚行数, 而 roll_cnt 代表歌词读取次数 当达到4次时 才允许歌词下滚
 
 
     int user_id = -1; // 用户的id
@@ -127,6 +130,7 @@ private slots:
     void reply3(QNetworkReply *);
     void play_net_Music(int, int); //点击歌曲tableWidget item 播放音乐
     bool is_net_music(QString); // 判断是不是 net_music
+    void initlrc_win(); // 初始化歌词播放窗口
     QPixmap PixmapToRound(QPixmap&, int); // 将图片变成圆角
 
 public slots:

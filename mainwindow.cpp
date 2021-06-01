@@ -17,6 +17,8 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QBitmap>
+#include <QScrollBar>
+
 using namespace std;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -467,9 +469,30 @@ void MainWindow::initPro() {
 
     // 定时器
     connect(this, &MainWindow::beginplay, [=] () {
+        // 歌词动态播放
         if(!Playlist ->isEmpty()) {
             time -> setInterval(1000); // 1000 毫秒触发一次
             connect(time, &QTimer::timeout, this, [=]() {
+                // 歌词动态滚动
+                if(!it_lrc->isNull()) {
+                    qDebug() << it_lrc.key() << endl;
+                    while(it_lrc != lrcMap.end() && it_lrc.key() <= this ->positontime + 500 && it_lrc.key() >= this ->positontime - 500) {
+                        qDebug() << "__in:    " << it_lrc.value() << endl;
+                        QFont font("幼圆");
+                        font.setWeight(100);
+                        font.setPointSize(13);
+//                        int idx = lrc_idx[it.value()];
+//                        qDebug() << "idx is::  "  << idx << endl;
+                        lrc_l ->verticalScrollBar() ->setValue(roll);
+//                        lrc_itm[idx] ->setFont(font);
+//                        lrc_itm[idx] ->setText("outout!");
+                        it_lrc++;
+                        roll_cnt++;  // 次数累加
+                        if(roll_cnt >= 4) roll++; // 次数到达 允许下滚
+                    }
+                }
+
+                //进度条更新
                 updatepos();
                 // 当Player 播放完最后一首时 让palylist 的index 变成0, Qt的QPlayMedia 真是博大精深
                 if (Playlist ->currentIndex() == Playlist ->mediaCount() - 1 && Player ->duration() / 1000 == this ->positontime / 1000) {
@@ -1262,6 +1285,57 @@ void MainWindow::parseJson2(QString json) {
                            }
                        }
                    }
+                   // 歌词显示
+                   if (valuedataObject.contains("lyrics")) //lrc
+                       {
+                           QJsonValue play_url_value = valuedataObject.take("lyrics");
+                           if (play_url_value.isString())
+                           {
+                               QString play_lrcStr = play_url_value.toString();
+                               if (play_urlStr != "")
+                               {
+                                   if (play_lrcStr != "")
+                                   {	//将整个歌词给s
+                                       QString s = play_lrcStr;
+                                       QStringList s1 = s.split("\n");
+                                       lrcMap.clear();
+                                       for (int i = 3; i < s1.size() - 1; i++)
+                                       {
+                                           QString ss1 = s1[i];
+                                           //歌词中开头有一些是无意义的字符，用正则表达式判断，只保存包含有时间戳的字符串。
+                                           QRegExp ipRegExp = QRegExp("\\[\\d\\d\\S\\d\\d\\S\\d\\d\\]");
+                                           //若包含则返回flase
+                                           bool match = ipRegExp.indexIn(ss1);
+                                           if (match == false)
+                                           {
+                                               //时间解析格式(分*60+秒)*100+厘秒
+                                               int s_1 = ss1.mid(1, 2).toInt();      //分
+                                               int s_2 = ss1.mid(4, 2).toInt();      //秒
+                                               int s_3 = ss1.mid(7, 2).toInt();      //厘秒
+                                               int s_count = ((s_1 * 60 + s_2) * 100 + s_3) * 10;   //毫秒换算
+
+                                               int lrctime = s_count;
+                                               QString lrcstr = ss1.mid(10);  // 歌词载入
+//                                               qDebug() << "durtion: " << s_count << "  " << lrcstr << endl;
+                                               //用Qmap来保存
+
+                                               lrcMap[lrctime] = lrcstr;
+//                                               lrc_idx[lrcstr] = i - 3;
+//                                               qDebug() << i - 3 << endl;
+                                               initlrc_win();
+                                           }
+                                       }
+                                       it_lrc = lrcMap.begin();
+                                       it_lrc++;
+                                   }
+                                   else
+                                   {
+                                       //没有歌词;
+                                   }
+                               }
+                           }
+                       }
+
                    insert_nowplay(net_file, net_name, net_image);  //将网络歌曲插入到队列
                }
                     //下一篇的歌词获取也是在这里添加代码
@@ -1309,7 +1383,41 @@ void MainWindow::reply3(QNetworkReply *reply)
             qDebug()<<"NET_图片显示错误";
         }
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// 初始化歌词播放
+void MainWindow::initlrc_win() {
+    // 初始化roll_cnt roll
+    roll_cnt = 0;
+    roll = 0;
+
+    lrc_l = new QListWidget(lrc_w);
+    lrc_l ->setStyleSheet("QListWidget::item{height: 45px;}"
+                          "QListWidget::item::hover{background: rgb(228, 228, 228);}");
+    lrc_l ->setGeometry(650, 80, 340, 360);
+    lrc_l ->setFrameShape(QListWidget::NoFrame);   // 无边框
+    lrc_l ->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);  //无进度条
+    lrc_l ->setFocusPolicy(Qt::NoFocus);  // 点击无 solid
+
+    //准备载入歌词 到窗口
+    QMap<int, QString>::iterator it = lrcMap.begin();
+
+    while(it != lrcMap.end()) {
+        QFont font;
+        font.setFamily("幼圆");
+        font.setPointSize(13);
+        QString lrc = it.value();
+        QListWidgetItem *lrc_it = new QListWidgetItem(it.value(), lrc_l);
+        lrc_it ->setFont(font);
+//        lrc_itm.push_back(lrc_it);
+        lrc_l ->addItem(lrc_it);
+        it++;
+    }
+    lrc_l ->show();
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MainWindow::mousePressEvent(QMouseEvent * e) {
     // 音量进度条
     if (e ->pos().x() >= 670 && e ->pos().x() < 720 && e ->pos().y() >= 635 && e ->pos().y() <= 640)  {
