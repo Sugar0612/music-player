@@ -929,6 +929,7 @@ void MainWindow::innowplay() {
 
  // 插入到数据库 和 音乐队列中
 void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QString lrc_name) {
+    update(); // 刷新
     bool is_http = is_net_music(name);
     QString user_id_qstr = QString("%0").arg(user_id);
     // 如果播放列表已经存在这首歌 那么只需要完成相对应的插入操作
@@ -1241,7 +1242,6 @@ void MainWindow::parseJson(QString json, int idx) {
 // 播放歌曲发出信号
 void MainWindow::play_net_Music(int row, int col) {
     //歌曲请求 row 是行号
-    update(); // 刷新
 
     QString KGAPISTR1 =QString("http://www.kugou.com/yy/index.php?r=play/getdata"
     "&hash=%1&album_id=%2&_=1497972864535").arg(v_hash.at(row)) .arg(v_id.at(row));
