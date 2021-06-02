@@ -131,6 +131,7 @@ private slots:
     void reply2(QNetworkReply *reply);  // 如果net_messageer finish  判断是否载入 然后进行js
     void parseJson2(QString json);  //播放音乐解析Json
     void reply3(QNetworkReply *);
+    void local_img(QString);     // 同上 只不过是本地的音乐图片 处理
     void play_net_Music(int, int); //点击歌曲tableWidget item 播放音乐
     bool is_net_music(QString); // 判断是不是 net_music
     void initlrc_win(); // 初始化歌词播放窗口

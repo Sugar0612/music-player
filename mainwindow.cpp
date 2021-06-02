@@ -572,7 +572,7 @@ void MainWindow::showPlayMedia() {
     int net_idx = Playlist->currentIndex();
     bool net = is_net_music(nowplaylist[net_idx]);
 
-
+    qDebug() << "net is : " << net << endl;
     int idx = Playlist ->currentIndex();
     QString textL =  nowlist[idx];
     //不同类型的 歌曲显示的名字不同
@@ -581,11 +581,11 @@ void MainWindow::showPlayMedia() {
         network_manager3->get(*network_request3);  // 反馈信号 准备解析json
         buildlrc(nowlist_lrc[idx]);
     } else {
-        QPixmap pix; // 载入本地音乐的图片
-        pix.load(":/coin/songer.png");
-        music_map ->setIcon(QIcon(pix));
-
+        // 载入本地音乐的图片
+        local_img(":/coin/songer.png");
+        buildlrc(nowlist_lrc[idx]);
     }
+
     musicL ->setText(getMName(textL) + "<br>" + getPName(textL));
     this ->setWindowTitle(textL);  // 用来 改变窗口的 名称
 }  // 改变label 显示新的 歌曲名字
@@ -910,7 +910,6 @@ void MainWindow::innowplay() {
     //初始化播放列表
     for(int i = 0; i < nowplaylist.size(); ++i) {
         readmysql(songqueue, nowplaylist[i], nowlist[i]); // 开始将歌曲一个一个的加入播放队列
-        buildlrc(nowlist_lrc[i]);
     }
 
     // 当音乐改变初始化 进度条 以及 显示音乐标签
@@ -936,9 +935,8 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
             Playlist ->setCurrentIndex(Playlist ->currentIndex() - 1);
             if(!is_http) {
                 Playlist ->addMedia(QUrl::fromLocalFile(nowplaylist[idx]));
-                QPixmap pix; // 载入本地音乐的图片
-                pix.load(":/coin/songer.png");
-                music_map ->setIcon(pix);
+                // 载入本地音乐的图片
+                local_img(p_name);
             } else {
                 Playlist ->addMedia(QUrl(nowplaylist[idx]));
                 network_request3->setUrl(QUrl(p_name));
@@ -950,9 +948,8 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
             Playlist ->removeMedia(idx);
             if(!is_http) {
                 Playlist ->insertMedia(c_idx + 1, QUrl::fromLocalFile(nowplaylist[idx]));
-                QPixmap pix; // 载入本地音乐的图片
-                pix.load(":/coin/songer.png");
-                music_map ->setIcon(pix);
+                // 载入本地音乐的图片
+                local_img(p_name);
             } else {
                 Playlist ->insertMedia(idx + 1, QUrl(nowplaylist[idx]));
                 network_request3->setUrl(QUrl(p_name));
@@ -995,8 +992,7 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
     if(nowlist.count(m_name) == 0) {
         if(!is_http) {
             QPixmap pix; // 载入本地音乐的图片
-            pix.load(":/coin/songer.png");
-            music_map ->setIcon(pix);
+            local_img(p_name);
         } else  {
             network_request3->setUrl(QUrl(p_name));
             network_manager3->get(*network_request3);  // 反馈信号 准备解析json
@@ -1035,6 +1031,15 @@ void MainWindow::readmysql(QListWidget* lw, QString file, QString name) {
         else Playlist ->addMedia(QUrl(file));
         Playlist ->setCurrentIndex(0);  // 重新设置 多媒体位置
         Player ->setPlaylist(Playlist);
+        buildlrc(nowlist_lrc[0]); // 设置歌词
+
+        if(is_net) {
+            network_request3->setUrl(QUrl(nowlist_im[0]));  //设置歌曲图片
+            network_manager3->get(*network_request3);  // 反馈信号 准备解析json
+        } else {
+            local_img(nowlist_im[0]);
+        }
+
         reinit(0); // 初始化
     }
 
@@ -1403,6 +1408,24 @@ void MainWindow::reply3(QNetworkReply *reply)
         }
 }
 
+// 同上 只不过是本地的音乐图片 处理
+void MainWindow::local_img(QString im) {
+    QPixmap pix, w_p;
+    pix.load(im);
+    pix = PixmapToRound(pix, 30);
+
+    w_p.load(im);
+    w_p = PixmapToRound(w_p, 180);
+
+    music_map ->setFixedSize(pix.width(), pix.height());
+    music_map ->setIconSize(QSize(pix.width(), pix.height()));
+    music_map ->setIcon(QIcon(pix));
+    music_map ->setStyleSheet("QPushButton{border: 0px;}");
+    music_map ->show();
+
+    lrc_w ->l ->setPixmap(w_p);
+}
+
 // 初始化歌词播放
 void MainWindow::initlrc_win() {
     // 初始化roll_cnt roll lrc_itm
@@ -1446,6 +1469,7 @@ void MainWindow::buildlrc(QString s) {
 
     // 本地音乐处理
     if(s == "本地音乐暂无歌词") {
+        qDebug() << "local lrc!" << endl;
         lrcMap[0] = s;
         lrc_idx[0] = 0;
     }
