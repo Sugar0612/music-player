@@ -47,6 +47,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //关于tablewidget 上面的名字
     list_col_table = QStringList() << "歌曲" << "作者" << "专辑" << "操作" << "时间";
+    song_col_name = QStringList() << "歌曲" << " " << " " << " ";
 
     initMysql();
     // 以上关于mysql的初始化
@@ -162,7 +163,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     sign_L ->setFont(font);
 
     // 本地音乐的播放列表
-    local_w = new mylistwidget(this);
+    local_w = new mytablewidget(this);
     local_w->hide(); // 隐藏
 
 
@@ -182,9 +183,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     mylocalmusic ->setFont(font);
 
     // 歌曲的队列
-    songqueue = new mylistwidget(this);
+    songqueue = new mytablewidget(this);
     songqueue ->setGeometry(1053, this ->height() - btnL ->height(), 250, 485 - btnL ->height());
-    songqueue ->setStyleSheet("QListWidget::Item{height: 100px;}");
+    songqueue ->horizontalHeader()->setHidden(true); // 去掉表头
+    songqueue ->setHorizontalHeaderLabels(song_col_name);
 
     // 喜欢的音乐列表
     likemusiclist = new QListWidgetItem(musiclist);
@@ -202,7 +204,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     tab_search ->setEditTriggers(QAbstractItemView::NoEditTriggers); // 不可编辑
     tab_search ->setShowGrid(false); // 关闭网格
     tab_search ->setFocusPolicy(Qt::NoFocus); //去掉虚线格
-    tab_search ->verticalHeader() ->setHidden(true);
+    tab_search ->verticalHeader() ->setHidden(true); // 去掉表头行号
+    tab_search ->setStyleSheet("QHeaderView::section{border: 0px solid white};"
+                               "QTableWidget::Item::selected{background: white;}");
 
 
     // 歌词地基窗口
@@ -400,12 +404,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         // 登录成功~
         sign_in = true;
          //先清空初始化整个播放器
-         int songqueue_len = songqueue ->count();
-         int local_w_len = local_w ->count();
-         for(int i = 0; i < songqueue_len; ++i) songqueue ->takeItem(0);
-         for(int i = 0; i < local_w_len; ++i) local_w ->takeItem(0);
-         vi.clear();
-         vb.clear();
+         int songqueue_len = songqueue ->rowCount();
+         int local_w_len = local_w ->rowCount();
+         for(int i = 0; i < songqueue_len; ++i) songqueue ->removeRow(0);
+         for(int i = 0; i < local_w_len; ++i) local_w ->removeRow(0);
          nowplaylist.clear();  // 初始化nowplay
          nowlist.clear();
          nowlist_im.clear();
@@ -442,6 +444,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
             an ->start();
         }
     });
+
+    //
+    connect(songqueue, &QTableWidget::cellDoubleClicked, this, &MainWindow::deletenowplay);
 
     // 关于http 网络歌曲的 json 解析 和相应播放
     connect(net_manager, &QNetworkAccessManager::finished, this, &MainWindow::reply);
@@ -718,7 +723,7 @@ void MainWindow::reinit(int status) {
 }
 
 // 初始化 listwidgetitem
-void MainWindow::boxitem(int i, QString text, QString file, QString file_c, QListWidget* lw, QVector<mybtn*>& b, QVector<QListWidgetItem*>& _i) {
+void MainWindow::boxitem(int i, QString text, QString file, QString file_c, QTableWidget* lw) {
      if(text == "") {
         qDebug() << "null filename!" << endl;
         return;
@@ -727,42 +732,24 @@ void MainWindow::boxitem(int i, QString text, QString file, QString file_c, QLis
      font.setFamily("幼圆");
      font.setPointSize(10);
 
-    QListWidgetItem *item = new QListWidgetItem();  // 新的一首歌
-//    lw ->addItem(item);
-    lw ->insertItem(i, item);
-
-
-    QWidget *iwt = new QWidget(lw);      //new widget
-    iwt ->resize(253, 100);
-
-    mybtn* tbtn = new mybtn(file, file_c);  // 按钮用来删除
-    tbtn ->move(70, 5);
-
-    QLabel* l = new QLabel(iwt);             //显示 歌曲名称
-    l ->setGeometry(0, 0, iwt ->width() - 200,  iwt ->height());
-    l ->setFont(font);
-    l ->setText(getMName(text) + "<br>" + getPName(text));
-    tbtn ->setParent(l);
-
-    iwt ->setStyleSheet("QWidget {background: white; border-left: 2px;}");
-
-    QHBoxLayout *layout = new QHBoxLayout;     // 布局
-    layout ->addWidget(l);
-    layout ->addWidget(tbtn);
-    iwt ->setLayout(layout);
-
-    iwt ->setStyleSheet("QWidget::hover{background:rgb(228, 228, 228);}"
-                         "QWidget::selected{background:rgb(228,228,228);}");
-    lw ->setItemWidget(item, iwt);   // 实现item 和 widget1的结合(显示 控件)
-
-    // 存储 插入
-    b.insert(b.begin() + i, tbtn);
-    _i.insert(_i.begin() + i, item);
+     qDebug() << "init mytablewidget! i is:  " << i << endl;
+      // 新的一首歌
+      int row = lw ->rowCount();
+      qDebug() << "talbe row is:  "  << row << endl;
+      lw ->setFont(font);
+      lw ->setRowCount(row);
+      lw ->setRowHeight(i, 75);
+      lw ->insertRow(i);
+      lw ->setItem(i, 0,  new QTableWidgetItem(text));
+      for(int j = 1; j <= 3; ++j) lw ->setItem(row, j,  new QTableWidgetItem());
+      qDebug() << "item over!!" << endl;
+      lw ->item(i, 2) ->setIcon(QIcon(file));
+      qDebug() << "OVER mytablewidget!" << endl;
 }
 
 
 // 加入到歌曲队列
-void MainWindow::queuefun(QListWidget* lw, QString file, QString m_name) {
+void MainWindow::queuefun(mytablewidget* lw, QString file, QString m_name) {
     bool is_http = is_net_music(file);
     int idx = Playlist ->isEmpty() ? -1 : Playlist ->currentIndex();
     if(file != "") {
@@ -779,23 +766,10 @@ void MainWindow::queuefun(QListWidget* lw, QString file, QString m_name) {
         }
     }
 
-    boxitem(idx + 1, m_name, ":/coin/delete.png", ":/coin/delete_c.png", lw, vb, vi);  // 加入队列 增加 item
+    boxitem(idx + 1, m_name, ":/coin/delete.png", ":/coin/delete_c.png", lw);  // 加入队列 增加 item
 
      // 当点击vb[i] 时 删除此时的音乐 在音乐队列 和 mysql中
-    if(is_delete) {
-        int i = 0;
-        while(1) {
-            connect(vb[i], &QPushButton::clicked, [=] () {
-                qDebug() << "new in!" << endl;
-                qDebug() << nowplaylist[i] << endl;
-                qDebug() << "vb size is:  " << vb.size() << "    row is :  " << i << endl;
-                deletenowplay(nowplaylist[i], i);
-                return;
-            });
-            ++i;
-            if(i >= vb.size()) break;
-        }
-    }
+
 }
 
 // 歌手名字
@@ -857,9 +831,9 @@ void MainWindow::showlocal(QListWidgetItem* i) {
 }
 
 // init 本地音乐 当点击item时 播放 那个item 对应的歌曲
-void MainWindow::localinit(QListWidget* lw) {
+void MainWindow::localinit(QTableWidget* lw) {
     for(int i = 0; i < filemlist.size(); ++i) {
-        boxitem(i, filemlist[i], ":/coin/begin.png", ":/coin/begin.png", lw, l_vb, l_vi);
+        boxitem(i, filemlist[i], ":/coin/begin.png", ":/coin/begin.png", lw);
     }  // 录入本地音乐text
 
     // 点击播放切换歌曲
@@ -976,12 +950,10 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
         }
 
         // 重新插入 item
-        songqueue ->takeItem(idx);
-        vb.erase(vb.begin() + idx, vb.begin() + idx + 1);
-        vi.erase(vi.begin() + idx, vi.begin() + idx + 1);
+        songqueue ->removeRow(idx);
 
         buildlrc(lrc_name);
-        boxitem(c_idx + 1, nowlist[idx], ":/coin/delete.png", ":/coin/delete_c.png", songqueue, vb, vi);  // 加入队列 增加 item
+        boxitem(c_idx + 1, nowlist[idx], ":/coin/delete.png", ":/coin/delete_c.png", songqueue);  // 加入队列 增加 item
 
         //重新插入nowlist nowplaylist nowlist_im
         QString nowlist_s = nowlist[idx];
@@ -1019,10 +991,6 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
         nowlist_im.insert(nowlist_im.begin() + idx + 1, p_name);
         nowlist_lrc.insert(nowlist_lrc.begin() + idx + 1, lrc_name);
         queuefun(songqueue, name, m_name); //插入新的歌曲
-
-//        // 插入歌词
-//        buildlrc(lrc_name);
-//        initlrc_win();
     }
 }
 
@@ -1037,7 +1005,8 @@ QString MainWindow::getname(QString file) {
 }
 
 // 初始化音乐队列 (仅在开启播放器的调用)
-void MainWindow::readmysql(QListWidget* lw, QString file, QString name) {
+void MainWindow::readmysql(mytablewidget* lw, QString file, QString name) {
+    qDebug() << "in readmysql!!" << endl;
     int idx = Playlist ->isEmpty() ? 0 : Playlist ->mediaCount();
     is_net = is_net_music(file); // 判断是不是 网络音乐
     if(file != "" && nowlist_lrc.size() != 0) {
@@ -1050,42 +1019,25 @@ void MainWindow::readmysql(QListWidget* lw, QString file, QString name) {
         reinit(0); // 初始化
     } else return;
 
-    boxitem(idx, name, ":/coin/delete.png", ":/coin/delete_c.png", lw, vb, vi);  // 加入队列 增加 item
+    boxitem(idx, name, ":/coin/delete.png", ":/coin/delete_c.png", lw);  // 加入队列 增加 item
 
-     // 当点击vb[i] 时 删除此时的音乐 在音乐队列 和 mysql中
-    if(!is_delete) {
-        int i = 0;
-        while(1) {
-            connect(vb[i], &QPushButton::clicked, [=] () {
-                qDebug() << "old in!" << endl;
-                qDebug() << "vb size is:  " << vb.size() << "    row is :  " << i << endl;
-                qDebug() << nowplaylist[i] << endl;
-                deletenowplay(nowplaylist[i], i);
-                return;
-            });
-            ++i;
-            if (i >= vb.size()) break;
-        }
-    }
 }
 
 
-void MainWindow::deletenowplay(QString file, int row) {
-    if (vb.size() <= row) {
-        return;
+void MainWindow::deletenowplay(int row, int col) {
+    QString file = nowplaylist[row];
+    if (col == 2) {
+        this ->songqueue -> removeRow(row);
     }
-    Playlist ->removeMedia(row);
+
     nowplaylist.erase(nowplaylist.begin() + row, nowplaylist.begin() + row + 1);
     nowlist.erase(nowlist.begin() + row, nowlist.begin() + row + 1);
-
-    vb[row] = nullptr;
-    vb.erase(vb.begin() + row, vb.begin() + row + 1);
-    vi.erase(vi.begin() + row, vi.begin() + row + 1);
-
-    this ->songqueue ->takeItem(row);
-
+    QString user_id_s = QString("%1").arg(user_id);
+    qDebug () << "delete from nowplay where music = '" + file + "' and id =" + user_id_s + ";" << endl;
     QSqlQuery sql;
-    sql.exec("delete from nowplay where music = '" + file + "' and id =" + user_id + ";");
+    bool ok = sql.exec("delete from nowplay where music = '" + file + "' and id = " + user_id_s + ";");
+    if (ok) qDebug() << "delete ok!" << endl;
+    else qDebug() << "error delete !" << endl;
     return;
 }
 
