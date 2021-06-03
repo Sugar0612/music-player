@@ -270,8 +270,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         if (!Playlist ->isEmpty()) {
             int idx = Playlist ->currentIndex();
             if(idx + 1 < nowlist.size()) {
-                Player ->pause();   // 暂停
-                Playlist ->next();  // 切换
+                Playlist ->setCurrentIndex(idx + 1); // 切换
                 Player ->play();  // 播放
                 initPlayer(); // 初始化播放
                 update();
@@ -290,7 +289,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         if (!Playlist ->isEmpty()) {
             int idx = Playlist ->currentIndex();
             if(idx - 1 >= 0) {
-                Playlist ->previous();
+                Playlist ->setCurrentIndex(idx - 1); // 切换
                 initPlayer(); // init 播放btn
                 update();
             }
@@ -570,9 +569,10 @@ QStringList MainWindow::getfileName(const QString& file) {
 void MainWindow::showPlayMedia() {
     reinit(1);  //初始化
     //判断是不是net_music
-    int net_idx = Playlist->currentIndex();
+    int net_idx = Playlist->currentIndex() == -1 && Playlist ->mediaCount() == 1 ? 0 : Playlist->currentIndex();
+    if(Playlist ->currentIndex() == -1 && Playlist ->mediaCount() == 1) Playlist ->setCurrentIndex(0);  // 如果index 变成-1了 那么直接setCurrentIndex 为0
+    qDebug() << "net_idx is:   " << net_idx << endl;
     bool net = is_net_music(nowplaylist[net_idx]);
-
     int idx = Playlist ->currentIndex();
     QString textL =  nowlist[idx];
     //不同类型的 歌曲显示的名字不同
@@ -894,7 +894,6 @@ void MainWindow::l_updown(mybtn* btn) {
 
 // 从数据库读出当前播放音乐的路径
 void MainWindow::innowplay() {
-    qDebug() << "innowplay!!!" << endl;
     // 将mysql中的音乐路径打印出来
     QSqlQuery selectq;
     selectq.exec("select * from nowplay;");
@@ -908,13 +907,10 @@ void MainWindow::innowplay() {
         }
     }
 
-    qDebug() << "mysql over!!!" << endl;
     //初始化播放列表
     for(int i = 0; i < nowplaylist.size(); ++i) {
-        qDebug() << "looper in!!!"  << endl;
         readmysql(songqueue, nowplaylist[i], nowlist[i]); // 开始将歌曲一个一个的加入播放队列
     }
-    qDebug() << "looper over!!!"  << endl;
 
     // 初始化第一首歌
     if (nowplaylist.size() > 0) {
@@ -926,7 +922,6 @@ void MainWindow::innowplay() {
             local_img(nowlist_im[0]);
         }
     }
-    qDebug() << "initover!!!" << endl;
     // 当音乐改变初始化 进度条 以及 显示音乐标签
     connect(Player, &QMediaPlayer::currentMediaChanged, this, [=]() {
         reinit(1);
@@ -1013,7 +1008,6 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
             network_request3->setUrl(QUrl(p_name));
             network_manager3->get(*network_request3);  // 反馈信号 准备解析json
         }
-        qDebug()<<"lrc out " << endl;
         int idx = Playlist ->currentIndex(); // 插入到此时播放音乐的后面
         nowplaylist.insert(nowplaylist.begin() + idx + 1, name);
         nowlist.insert(nowlist.begin() + idx + 1, m_name);
@@ -1039,7 +1033,6 @@ QString MainWindow::getname(QString file) {
 
 // 初始化音乐队列 (仅在开启播放器的调用)
 void MainWindow::readmysql(QListWidget* lw, QString file, QString name) {
-    qDebug() << "readmysql" << endl;
     int idx = Playlist ->isEmpty() ? 0 : Playlist ->mediaCount();
     is_net = is_net_music(file); // 判断是不是 网络音乐
     if(file != "" && nowlist_lrc.size() != 0) {
@@ -1087,7 +1080,7 @@ void MainWindow::deletenowplay(QString file, int row) {
     this ->songqueue ->takeItem(row);
 
     QSqlQuery sql;
-    sql.exec("delete from nowplay where music = '" + file + "'; ");
+    sql.exec("delete from nowplay where music = '" + file + "' and id =" + user_id + ";");
     return;
 }
 
@@ -1482,7 +1475,7 @@ void MainWindow::buildlrc(QString s) {
 
     // 本地音乐处理
     if(s == "本地音乐暂无歌词") {
-        qDebug() << "local lrc!" << endl;
+//        qDebug() << "local lrc!" << endl;
         lrcMap[0] = s;
         lrc_idx[0] = 0;
         initlrc_win();
