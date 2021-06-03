@@ -202,7 +202,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     tab_search ->setEditTriggers(QAbstractItemView::NoEditTriggers); // 不可编辑
     tab_search ->setShowGrid(false); // 关闭网格
     tab_search ->setFocusPolicy(Qt::NoFocus); //去掉虚线格
-    tab_search ->verticalHeader() ->setHidden(true);
+    tab_search ->verticalHeader() ->setHidden(true); // 去掉表头行好
+    tab_search
 
 
     // 歌词地基窗口
