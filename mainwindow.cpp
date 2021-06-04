@@ -163,7 +163,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     sign_L ->setFont(font);
 
     // 本地音乐的播放列表
-    local_w = new mytablewidget(this);
+    local_w = new QTableWidget(this);
+    local_w ->setEditTriggers(QAbstractItemView::NoEditTriggers); // 不可编辑
+    local_w ->setShowGrid(false); // 关闭网格
+    local_w ->setFocusPolicy(Qt::NoFocus); //去掉虚线格
+    local_w ->verticalHeader() ->setHidden(true); // 去掉表头行号
+    local_w ->setColumnCount(3);//设置 列宽 和 列count
+
+    int w = ((this ->width() - 160) / 3);
+    for(int i = 0; i < 3; ++i) local_w ->setColumnWidth(i, w);
     local_w->hide(); // 隐藏
 
 
@@ -449,7 +457,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(songqueue, &QTableWidget::cellDoubleClicked, this, &MainWindow::songqueue_fun);
 
     //local 点击触发
-    connect(local_w, &QTableWidget::cellClicked, this, &MainWindow::local_fun);
+    connect(local_w, &QTableWidget::cellDoubleClicked, this, &MainWindow::local_fun);
 
 
     // 关于http 网络歌曲的 json 解析 和相应播放
@@ -744,7 +752,7 @@ void MainWindow::boxitem(int i, QString text, QString file, QString file_c, QTab
       lw ->insertRow(i);
       lw ->setRowHeight(i, 75);
       lw ->setItem(i, 0,  new QTableWidgetItem(text));
-      for(int j = 1; j <= 3; ++j) lw ->setItem(row, j,  new QTableWidgetItem());
+      for(int j = 1; j <= 3; ++j) lw ->setItem(i, j,  new QTableWidgetItem());
 //      qDebug() << "item over!!" << endl;
       lw ->item(i, 2) ->setIcon(QIcon(file));
 //      qDebug() << "OVER mytablewidget!" << endl;
@@ -768,10 +776,7 @@ void MainWindow::queuefun(mytablewidget* lw, QString file, QString m_name) {
             reinit(0);
         }
     }
-
     boxitem(idx + 1, m_name, ":/coin/delete.png", ":/coin/delete_c.png", lw);  // 加入队列 增加 item
-
-     // 当点击vb[i] 时 删除此时的音乐 在音乐队列 和 mysql中
 
 }
 
@@ -826,7 +831,9 @@ void MainWindow::showlocal(QListWidgetItem* i) {
     if (idx == 0) {  // idx == 0 说明点击的时 本地音乐
         filemlist = getfileName(this ->filem);   // 用来存储载入歌曲的 歌名
         local_w ->setGeometry(musiclist->width(), btnL->height(),this ->width() - musiclist->width(), this ->height() - btnL->height() - 100);
-        local_w ->setStyleSheet("QListWidget::Item{height: 60px;}");
+        local_w ->setHorizontalHeaderLabels(QStringList() << "歌曲" << " " << " ");
+        local_w ->setStyleSheet("QTableWidget::Item::selected{background: white;}"
+                                "QHeaderView::section{border: 0px solid white};");
         localinit(local_w); // init QlistWidget
         local_w ->show();
         tab_search ->hide();
@@ -836,7 +843,25 @@ void MainWindow::showlocal(QListWidgetItem* i) {
 // init 本地音乐 当点击item时 播放 那个item 对应的歌曲
 void MainWindow::localinit(QTableWidget* lw) {
     for(int i = 0; i < filemlist.size(); ++i) {
-        boxitem(i, filemlist[i], ":/coin/begin.png", ":/coin/begin.png", lw);
+        if(filemlist[i] == "") {
+           qDebug() << "null filename!" << endl;
+           return;
+        }
+
+        QFont font;
+        font.setFamily("幼圆");
+        font.setPointSize(10);
+
+         // 新的一首歌
+         int row = lw ->rowCount();
+         lw ->setFont(font);
+         lw ->setRowCount(row);
+         lw ->insertRow(i);
+         lw ->setRowHeight(i, 45);
+
+         lw ->setItem(i, 0,  new QTableWidgetItem(filemlist[i]));
+         for(int j = 1; j < 3; ++j) lw ->setItem(row, j,  new QTableWidgetItem());
+         lw ->item(i, 1) ->setIcon(QIcon(":/coin/begin.png"));
     }  // 录入本地音乐text
 }
 
@@ -937,6 +962,7 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
             Player ->play();
         }
 
+
         // 重新插入 item
         songqueue ->removeRow(idx);
         buildlrc(lrc_name);
@@ -946,18 +972,22 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
         QString nowlist_s = nowlist[idx];
         QString nowplaylist_s = nowplaylist[idx];
         QString nowlist_im_s = nowlist_im[idx];
+        QString nowlist_lrc_s = nowlist_lrc[idx];
         nowlist.erase(nowlist.begin() + idx, nowlist.begin() + idx + 1);
         nowplaylist.erase(nowplaylist.begin() + idx, nowplaylist.begin() + idx + 1);
-        nowlist_im.erase(nowlist_im.begin()+idx, nowlist_im.begin() + idx + 1);
-        nowlist_lrc.erase(nowlist_lrc.begin() + idx, nowlist.begin() + idx + 1);
+        nowlist_im.erase(nowlist_im.begin() + idx, nowlist_im.begin() + idx + 1);
+        qDebug() << "idx is:  "  << idx << "  lrc size is:  "  << nowlist_lrc.size() << "  nowplaylist size is :  " << nowplaylist.size() << endl;
+        nowlist_lrc.erase(nowlist_lrc.begin() + idx, nowlist_lrc.begin() + idx + 1);
+        qDebug() << "over!!" << endl;
 
         nowlist.insert(nowlist.begin() + c_idx + 1, nowlist_s);
         nowplaylist.insert(nowplaylist.begin() + c_idx + 1, nowplaylist_s);
         nowlist_im.insert(nowlist_im.begin() + c_idx + 1, nowlist_im_s);
-        nowlist_lrc.insert(nowlist_lrc.begin() + idx + 1, lrc_name);
+        nowlist_lrc.insert(nowlist_lrc.begin() + c_idx + 1, nowlist_lrc_s);
         return;
     }
 
+    qDebug() << "insert now!!" << endl;
     // 如果is_delete = false 那么调用readmysql 里面的deletenowplay 否则调用queuefun里面的deletenowplay
     is_delete = true;
     // 插入到数据库中
@@ -993,7 +1023,7 @@ QString MainWindow::getname(QString file) {
 
 // 初始化音乐队列 (仅在开启播放器的调用)
 void MainWindow::readmysql(mytablewidget* lw, QString file, QString name) {
-    qDebug() << "in readmysql!!" << endl;
+//    qDebug() << "in readmysql!!" << endl;
     int idx = Playlist ->isEmpty() ? 0 : Playlist ->mediaCount();
     is_net = is_net_music(file); // 判断是不是 网络音乐
     if(file != "" && nowlist_lrc.size() != 0) {
@@ -1030,6 +1060,7 @@ void MainWindow::songqueue_fun(int row, int col) {
 
 //local的功能
 void MainWindow::local_fun(int row, int col) {
+    qDebug() << "local_ininfun!" << endl;
     // 当col == 1 时播放歌曲
     if(col == 1) {
         insert_nowplay(this ->filem + "/" + filemlist[row], filemlist[row], ":/coin/songer.png", "本地音乐暂无歌词");  // 插入到数据库 音乐队列中
