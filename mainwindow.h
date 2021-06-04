@@ -126,7 +126,8 @@ private slots:
     void l_updown(mybtn* btn); //点击时: 按钮的上下移动
     void insert_nowplay(QString, QString, QString, QString); // 插入到音乐队列中
     void innowplay();   // 将当前播放音乐路径录入
-    void deletenowplay(int, int); // 删除队列item 并且删除mysql中的数据
+    void songqueue_fun(int, int); // songqueue功能
+    void local_fun(int, int);  // local 功能
     void reply(QNetworkReply*);  // 如果net_messager finish  判断是否载入 然后进行js
     void search(QString, int);  // 连接http 搜索歌曲
     void parseJson(QString, int);  // 将歌曲放入 tableWidget

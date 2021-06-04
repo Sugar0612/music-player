@@ -445,8 +445,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         }
     });
 
-    //
-    connect(songqueue, &QTableWidget::cellDoubleClicked, this, &MainWindow::deletenowplay);
+    //songqueue 点击触发
+    connect(songqueue, &QTableWidget::cellDoubleClicked, this, &MainWindow::songqueue_fun);
+
+    //local 点击触发
+    connect(local_w, &QTableWidget::cellClicked, this, &MainWindow::local_fun);
+
 
     // 关于http 网络歌曲的 json 解析 和相应播放
     connect(net_manager, &QNetworkAccessManager::finished, this, &MainWindow::reply);
@@ -732,19 +736,18 @@ void MainWindow::boxitem(int i, QString text, QString file, QString file_c, QTab
      font.setFamily("幼圆");
      font.setPointSize(10);
 
-     qDebug() << "init mytablewidget! i is:  " << i << endl;
       // 新的一首歌
       int row = lw ->rowCount();
-      qDebug() << "talbe row is:  "  << row << endl;
+//      qDebug() << "talbe row is:  "  << row << endl;
       lw ->setFont(font);
       lw ->setRowCount(row);
-      lw ->setRowHeight(i, 75);
       lw ->insertRow(i);
+      lw ->setRowHeight(i, 75);
       lw ->setItem(i, 0,  new QTableWidgetItem(text));
       for(int j = 1; j <= 3; ++j) lw ->setItem(row, j,  new QTableWidgetItem());
-      qDebug() << "item over!!" << endl;
+//      qDebug() << "item over!!" << endl;
       lw ->item(i, 2) ->setIcon(QIcon(file));
-      qDebug() << "OVER mytablewidget!" << endl;
+//      qDebug() << "OVER mytablewidget!" << endl;
 }
 
 
@@ -808,7 +811,7 @@ void MainWindow::showlocal(QListWidgetItem* i) {
     while(selectq.next()) {
         if(user_id == selectq.value(0).value<int>()) {
             this ->filem = selectq.value(1).value<QString>();
-            qDebug() << "its id filem is:   " << this ->filem << endl;
+//            qDebug() << "its id filem is:   " << this ->filem << endl;
             break;
         }
     }
@@ -835,21 +838,6 @@ void MainWindow::localinit(QTableWidget* lw) {
     for(int i = 0; i < filemlist.size(); ++i) {
         boxitem(i, filemlist[i], ":/coin/begin.png", ":/coin/begin.png", lw);
     }  // 录入本地音乐text
-
-    // 点击播放切换歌曲
-    for(int i = 0; i < filemlist.size(); ++i) {
-        connect(l_vb[i], &mybtn::clicked, [=] () {
-            l_updown(l_vb[i]);  // 按钮跳动
-            insert_nowplay(this ->filem + "/" + filemlist[i], filemlist[i], ":/coin/songer.png", "本地音乐暂无歌词");  // 插入到数据库 音乐队列中
-            playf = false; //准备初始化 播放按钮
-            reinit(1);
-            if(emit_i == 0) {
-                emit beginplay();
-                emit_i++;
-            }  // 防止重复激发 timer
-            initPlayer();   // 初始化播放按钮
-        });
-    }
 }
 
 // 按钮跳动动作
@@ -951,7 +939,6 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
 
         // 重新插入 item
         songqueue ->removeRow(idx);
-
         buildlrc(lrc_name);
         boxitem(c_idx + 1, nowlist[idx], ":/coin/delete.png", ":/coin/delete_c.png", songqueue);  // 加入队列 增加 item
 
@@ -1024,21 +1011,35 @@ void MainWindow::readmysql(mytablewidget* lw, QString file, QString name) {
 }
 
 
-void MainWindow::deletenowplay(int row, int col) {
-    QString file = nowplaylist[row];
+void MainWindow::songqueue_fun(int row, int col) {
+    //删除操作
     if (col == 2) {
+        QSqlQuery sql;
+        QString file = nowplaylist[row];
+        QString user_id_s = QString("%1").arg(user_id);
         this ->songqueue -> removeRow(row);
+        Playlist ->removeMedia(row); // 多媒体删除 音乐列表 歌曲
+        nowplaylist.erase(nowplaylist.begin() + row, nowplaylist.begin() + row + 1);
+        nowlist.erase(nowlist.begin() + row, nowlist.begin() + row + 1);
+        sql.exec("delete from nowplay where music = '" + file + "' and id = " + user_id_s + ";");
+        return;
     }
-
-    nowplaylist.erase(nowplaylist.begin() + row, nowplaylist.begin() + row + 1);
-    nowlist.erase(nowlist.begin() + row, nowlist.begin() + row + 1);
-    QString user_id_s = QString("%1").arg(user_id);
-    qDebug () << "delete from nowplay where music = '" + file + "' and id =" + user_id_s + ";" << endl;
-    QSqlQuery sql;
-    bool ok = sql.exec("delete from nowplay where music = '" + file + "' and id = " + user_id_s + ";");
-    if (ok) qDebug() << "delete ok!" << endl;
-    else qDebug() << "error delete !" << endl;
     return;
+}
+
+
+//local的功能
+void MainWindow::local_fun(int row, int col) {
+    // 当col == 1 时播放歌曲
+    if(col == 1) {
+        insert_nowplay(this ->filem + "/" + filemlist[row], filemlist[row], ":/coin/songer.png", "本地音乐暂无歌词");  // 插入到数据库 音乐队列中
+        reinit(1);
+        if(emit_i == 0) {
+            emit beginplay();
+            emit_i++;
+        }  // 防止重复激发 timer
+        initPlayer();   // 初始化播放按钮
+    }
 }
 
 // 判断是否是网络音乐
