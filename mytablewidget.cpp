@@ -8,10 +8,11 @@ mytablewidget::mytablewidget(QWidget *parent) : QTableWidget(parent)
     this ->verticalHeader() ->setHidden(true); // 去掉表头行号
 
     //设置 列宽 和 列count
-    this ->setColumnCount(4);
-    this ->setColumnWidth(0, 250 / 2);
+    this ->setColumnCount(5);
+    int w = 250 / 7;
+    this ->setColumnWidth(0, w);
+    this ->setColumnWidth(1, w * 3);
 
-    int w = (250 / 2) / 3;
-    for(int i = 1; i <= 3; ++i) this ->setColumnWidth(i, w);
+    for(int i = 2; i <= 4; ++i) this ->setColumnWidth(i, w);
     this ->setStyleSheet("QTableWidget::Item::selected{background: white;}");
 }

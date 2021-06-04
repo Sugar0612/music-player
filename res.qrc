@@ -30,5 +30,7 @@
         <file>coin/local_add.png</file>
         <file>coin/local_add_c.png</file>
         <file>coin/songer.png</file>
+        <file>coin/like.png</file>
+        <file>coin/like_c.png</file>
     </qresource>
 </RCC>

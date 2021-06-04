@@ -593,6 +593,7 @@ void MainWindow::showPlayMedia() {
     //判断是不是net_music
     int net_idx = Playlist->currentIndex() == -1 && Playlist ->mediaCount() == 1 ? 0 : Playlist->currentIndex();
     if(Playlist ->currentIndex() == -1 && Playlist ->mediaCount() == 1) Playlist ->setCurrentIndex(0);  // 如果index 变成-1了 那么直接setCurrentIndex 为0
+    if (net_idx == -1 && Playlist ->mediaCount() == 0) return; // 防止索引越界
     qDebug() << "net_idx is:   " << net_idx << endl;
     bool net = is_net_music(nowplaylist[net_idx]);
     int idx = Playlist ->currentIndex();
@@ -751,10 +752,12 @@ void MainWindow::boxitem(int i, QString text, QString file, QString file_c, QTab
       lw ->setRowCount(row);
       lw ->insertRow(i);
       lw ->setRowHeight(i, 75);
-      lw ->setItem(i, 0,  new QTableWidgetItem(text));
-      for(int j = 1; j <= 3; ++j) lw ->setItem(i, j,  new QTableWidgetItem());
+      lw ->setItem(i, 0,  new QTableWidgetItem());
+      lw ->setItem(i, 1,  new QTableWidgetItem(" " + getMName(text) + "\n" + getPName(text)));
+      for(int j = 2; j <= 4; ++j) lw ->setItem(i, j,  new QTableWidgetItem());
 //      qDebug() << "item over!!" << endl;
-      lw ->item(i, 2) ->setIcon(QIcon(file));
+      lw ->item(i, 0) ->setIcon(QIcon(":/coin/like_c.png"));
+      lw ->item(i, 3) ->setIcon(QIcon(":/coin/delete.png"));
 //      qDebug() << "OVER mytablewidget!" << endl;
 }
 
@@ -863,25 +866,6 @@ void MainWindow::localinit(QTableWidget* lw) {
          for(int j = 1; j < 3; ++j) lw ->setItem(row, j,  new QTableWidgetItem());
          lw ->item(i, 1) ->setIcon(QIcon(":/coin/begin.png"));
     }  // 录入本地音乐text
-}
-
-// 按钮跳动动作
-void MainWindow::l_updown(mybtn* btn) {
-    // 向下
-    QPropertyAnimation *an  = new QPropertyAnimation(btn, "geometry");
-    an ->setDuration(200);
-    an ->setStartValue(QRect(btn->x(), btn->y(), btn->width(), btn->height()));
-    an ->setEndValue(QRect(btn->x(), btn->y() + 5, btn->width(), btn->height()));
-    an ->setEasingCurve(QEasingCurve::OutBounce);  // 弹跳方式
-    an ->start();
-
-    // 向上复原
-    QPropertyAnimation *a  = new QPropertyAnimation(btn, "geometry");
-    a ->setDuration(200);
-    a ->setStartValue(QRect(btn->x(), btn->y() + 5, btn->width(), btn->height()));
-    a ->setEndValue(QRect(btn->x(), btn->y(), btn->width(), btn->height()));
-    a ->setEasingCurve(QEasingCurve::OutBounce); // 弹跳方式
-    a ->start();
 }
 
 // 从数据库读出当前播放音乐的路径
@@ -1043,7 +1027,8 @@ void MainWindow::readmysql(mytablewidget* lw, QString file, QString name) {
 
 void MainWindow::songqueue_fun(int row, int col) {
     //删除操作
-    if (col == 2) {
+    if (col == 3) {
+        qDebug() << "col == 3 is in! this row is  :  "  << row  << endl;
         QSqlQuery sql;
         QString file = nowplaylist[row];
         QString user_id_s = QString("%1").arg(user_id);

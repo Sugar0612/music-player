@@ -123,7 +123,6 @@ private slots:
     QString getname(QString); // 获取当前音乐文件的文件名
     void showlocal(QListWidgetItem*);  // 显示本地音乐
     void localinit(QTableWidget*); // 初始化本地音乐列表
-    void l_updown(mybtn* btn); //点击时: 按钮的上下移动
     void insert_nowplay(QString, QString, QString, QString); // 插入到音乐队列中
     void innowplay();   // 将当前播放音乐路径录入
     void songqueue_fun(int, int); // songqueue功能
