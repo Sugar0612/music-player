@@ -141,10 +141,14 @@ private slots:
     void buildlrc(QString);
     QPixmap PixmapToRound(QPixmap&, int); // 将图片变成圆角
     QString is_like(QString); // 判断是不是喜欢音乐
+<<<<<<< HEAD
     void fun_like(QString, int);  // like_w的显示
     void fun_like_w(int, int); // 关于like_w的点击
     void init_local();  // 本地init
     void init_like();  // 喜爱init
+=======
+    void fun_like(QTableWidget*, QString, int);  // like_w的显示
+>>>>>>> 5c5f5773902d7e6d7838fc3e0cf057730a274e8d
 
 public slots:
     void updatepos();   // 更新 播放时间
