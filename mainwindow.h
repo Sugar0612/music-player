@@ -79,14 +79,14 @@ public:
     QString filem;           // 音乐文件路径  "F:\\qq音乐\\Music";
     QString pname, mname; // 歌手名字 和 歌曲名字
     QString net_file, net_name, net_image, net_lrc; // 记录http 的路径  歌曲名字 歌曲图片 歌词
-    QStringList filemlist, nowplaylist, nowlist, nowlist_im, list_col_table, nowlist_lrc, song_col_name;  // 本地音乐文件路径, 当前播放音乐路径  歌词   当前的播放音乐名字（当放入songqueue 后可以clear）
+    QStringList filemlist, nowplaylist, nowlist, nowlist_im, list_col_table, nowlist_lrc, song_col_name, likelist;  // 本地音乐文件路径, 当前播放音乐路径  歌词   当前的播放音乐名字（当放入songqueue 后可以clear）
     startbtn* playbt ,*volbt;                  // 音乐的播放按钮  音量按钮
     QLabel* musicL, *btnL ,*liftLabel ,*rightLabel, *PlayL, *sign_L;     // 用来显示当前播放歌曲  窗口按钮的封装 左时间显示 右边时间显示 播放控件的封装 登录标签
 //    mytabwidget *mainmusic; // 设置音乐播放器 主窗口!
     mylab* mymusic, *mylist;   // 我的音乐的标签  我的歌单标签
     mylistwidget *musiclist ,*songlist;  // 喜爱歌单 和 本地音乐的创建
     mytablewidget *songqueue;   //播放队列列表
-    QTableWidget *local_w;       //本地音乐列表
+    QTableWidget *local_w, *like_w;       //本地音乐列表
     QListWidgetItem* likemusiclist, *mylocalmusic;  // 喜爱的歌单 和 本地音乐
     QLineEdit* search_line;   // 搜索框
     QTableWidget *tab_search;  //用来显示歌曲
@@ -116,7 +116,7 @@ private slots:
     void  readmysql(mytablewidget*, QString, QString);   // 初始化音乐队列 (仅在开启播放器的调用)
     QStringList getfileName(const QString& file);  // 将所有的 歌的文件路径都记录到 QstrinList中
     void reinit(int);  // x 初始化
-    void boxitem(int i, QString text, QString file, QString file_, QTableWidget*); // 去在音乐列表里(QListWidget) 中实现一个item
+    void boxitem(int i, QString text, QTableWidget*); // 去在音乐列表里(QListWidget) 中实现一个item
     void queuefun(mytablewidget*, QString, QString); // 封装 boxitem
     QString getPName(QString filename); // 歌手名字
     QString getMName(QString filename); // 音乐名字
@@ -139,6 +139,8 @@ private slots:
     void initlrc_win(); // 初始化歌词播放窗口
     void buildlrc(QString);
     QPixmap PixmapToRound(QPixmap&, int); // 将图片变成圆角
+    QString is_like(QString); // 判断是不是喜欢音乐
+    void fun_like(QTableWidget*, QString, int);  // like_w的显示
 
 public slots:
     void updatepos();   // 更新 播放时间

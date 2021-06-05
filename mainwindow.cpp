@@ -47,7 +47,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //关于tablewidget 上面的名字
     list_col_table = QStringList() << "歌曲" << "作者" << "专辑" << "操作" << "时间";
-    song_col_name = QStringList() << "歌曲" << " " << " " << " ";
+    song_col_name = QStringList() << " "<< "歌曲" << " " << " " << " ";
 
     initMysql();
     // 以上关于mysql的初始化
@@ -168,11 +168,30 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     local_w ->setShowGrid(false); // 关闭网格
     local_w ->setFocusPolicy(Qt::NoFocus); //去掉虚线格
     local_w ->verticalHeader() ->setHidden(true); // 去掉表头行号
-    local_w ->setColumnCount(3);//设置 列宽 和 列count
+    local_w ->setColumnCount(5);//设置 列宽 和 列count
 
-    int w = ((this ->width() - 160) / 3);
-    for(int i = 0; i < 3; ++i) local_w ->setColumnWidth(i, w);
-    local_w->hide(); // 隐藏
+
+    local_w ->setColumnWidth(0, 40);
+    local_w ->setColumnWidth(1, 150);
+    local_w ->setColumnWidth(2, 40);
+    local_w ->setColumnWidth(3, 40);
+    local_w ->setColumnWidth(4, 575);
+    local_w->hide();  //隐藏
+
+    //喜欢音乐
+    like_w = new QTableWidget(this);
+    like_w ->setEditTriggers(QAbstractItemView::NoEditTriggers); // 不可编辑
+    like_w ->setShowGrid(false); // 关闭网格
+    like_w ->setFocusPolicy(Qt::NoFocus); //去掉虚线格
+    like_w ->verticalHeader() ->setHidden(true); // 去掉表头行号
+    like_w ->setColumnCount(5);//设置 列宽 和 列count
+
+    like_w ->setColumnWidth(0, 40);  // 爱心
+    like_w ->setColumnWidth(1, 150); // 歌名
+    like_w ->setColumnWidth(2, 40);  // 播放
+    like_w ->setColumnWidth(3, 40); // 增添到其他歌单
+    like_w ->setColumnWidth(4, 575);  // 空白
+    like_w ->hide();  //隐藏
 
 
     // 我的音乐 的列表 窗口
@@ -287,7 +306,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         if (!Playlist ->isEmpty()) {
             int idx = Playlist ->currentIndex();
             if(idx + 1 < nowlist.size()) {
-                Playlist ->setCurrentIndex(idx + 1); // 切换
+                Player ->pause();
+                Playlist ->next();
                 Player ->play();  // 播放
                 initPlayer(); // 初始化播放
                 update();
@@ -414,8 +434,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
          //先清空初始化整个播放器
          int songqueue_len = songqueue ->rowCount();
          int local_w_len = local_w ->rowCount();
+         int like_w_len = like_w ->rowCount();
          for(int i = 0; i < songqueue_len; ++i) songqueue ->removeRow(0);
          for(int i = 0; i < local_w_len; ++i) local_w ->removeRow(0);
+         for(int i = 0; i < like_w_len; ++i) like_w ->removeRow(0);
          nowplaylist.clear();  // 初始化nowplay
          nowlist.clear();
          nowlist_im.clear();
@@ -454,10 +476,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     });
 
     //songqueue 点击触发
-    connect(songqueue, &QTableWidget::cellDoubleClicked, this, &MainWindow::songqueue_fun);
+    connect(songqueue, &QTableWidget::cellClicked, this, &MainWindow::songqueue_fun);
 
     //local 点击触发
-    connect(local_w, &QTableWidget::cellDoubleClicked, this, &MainWindow::local_fun);
+    connect(local_w, &QTableWidget::cellClicked, this, &MainWindow::local_fun);
 
 
     // 关于http 网络歌曲的 json 解析 和相应播放
@@ -735,8 +757,8 @@ void MainWindow::reinit(int status) {
     if(status == 1) time ->start();
 }
 
-// 初始化 listwidgetitem
-void MainWindow::boxitem(int i, QString text, QString file, QString file_c, QTableWidget* lw) {
+// 初始化 tablewidgetitem
+void MainWindow::boxitem(int i, QString text, QTableWidget* lw) {
      if(text == "") {
         qDebug() << "null filename!" << endl;
         return;
@@ -746,19 +768,21 @@ void MainWindow::boxitem(int i, QString text, QString file, QString file_c, QTab
      font.setPointSize(10);
 
       // 新的一首歌
+     QString song_like = is_like(nowplaylist[i]);
       int row = lw ->rowCount();
-//      qDebug() << "talbe row is:  "  << row << endl;
-      lw ->setFont(font);
-      lw ->setRowCount(row);
+      lw ->setRowCount(row + 1);
       lw ->insertRow(i);
-      lw ->setRowHeight(i, 75);
-      lw ->setItem(i, 0,  new QTableWidgetItem());
-      lw ->setItem(i, 1,  new QTableWidgetItem(" " + getMName(text) + "\n" + getPName(text)));
-      for(int j = 2; j <= 4; ++j) lw ->setItem(i, j,  new QTableWidgetItem());
-//      qDebug() << "item over!!" << endl;
-      lw ->item(i, 0) ->setIcon(QIcon(":/coin/like_c.png"));
+      lw ->setRowHeight(i, 45);
+
+
+      for(int j = 0; j <= 4; ++j) lw ->setItem(i, j, new QTableWidgetItem());
+
+      if(song_like == "0") lw ->item(i, 0) ->setIcon(QIcon(":/coin/like_c.png"));
+      else lw ->item(i, 0) ->setIcon(QIcon(":/coin/like.png"));
+      lw ->item(i, 1) ->setText(getPName(text) + "\n" + getMName(text));
+      lw ->item(i, 2) ->setIcon(QIcon(":/coin/begin.png"));
       lw ->item(i, 3) ->setIcon(QIcon(":/coin/delete.png"));
-//      qDebug() << "OVER mytablewidget!" << endl;
+//      lw ->item(i, 4) ->setIcon(QIcon(""));
 }
 
 
@@ -779,7 +803,7 @@ void MainWindow::queuefun(mytablewidget* lw, QString file, QString m_name) {
             reinit(0);
         }
     }
-    boxitem(idx + 1, m_name, ":/coin/delete.png", ":/coin/delete_c.png", lw);  // 加入队列 增加 item
+    boxitem(idx + 1, m_name, lw);  // 加入队列 增加 item
 
 }
 
@@ -832,13 +856,49 @@ void MainWindow::showlocal(QListWidgetItem* i) {
 //    qDebug() << "filem is :   "  << this ->filem << endl;
     int idx = musiclist ->row(i);  //点击的是我的音乐的第几行item （共两行）
     if (idx == 0) {  // idx == 0 说明点击的时 本地音乐
+        for(int i = 0; i <= local_w ->rowCount(); ++i) local_w ->removeRow(0); // 初始化
+        qDebug() << "row is :  " << local_w ->rowCount() << endl;
         filemlist = getfileName(this ->filem);   // 用来存储载入歌曲的 歌名
         local_w ->setGeometry(musiclist->width(), btnL->height(),this ->width() - musiclist->width(), this ->height() - btnL->height() - 100);
-        local_w ->setHorizontalHeaderLabels(QStringList() << "歌曲" << " " << " ");
+        local_w ->setHorizontalHeaderLabels(QStringList() << " " << "歌曲" << " " << " " << " ");
         local_w ->setStyleSheet("QTableWidget::Item::selected{background: white;}"
                                 "QHeaderView::section{border: 0px solid white};");
+
         localinit(local_w); // init QlistWidget
         local_w ->show();
+        like_w ->hide();
+        tab_search ->hide();
+    }
+
+    if (idx == 1) { // idx == 1 说明点击的时 喜爱音乐
+        for(int i = 0; i <= like_w ->rowCount(); ++i) like_w ->removeRow(0); // 初始化
+        qDebug() << "row is :  " << like_w ->rowCount() << endl;
+        like_w ->setGeometry(musiclist->width(), btnL->height(),this ->width() - musiclist->width(), this ->height() - btnL->height() - 100);
+        like_w ->setHorizontalHeaderLabels(QStringList() << " " << "歌曲" << " " << " " << " ");
+        like_w ->setStyleSheet("QTableWidget::Item::selected{background: white;}"
+                               "QHeaderView::section{border: 0px solid white};");
+
+        //init mymusic list
+        QFont font;
+        font.setFamily("幼圆");
+        font.setWeight(10);
+
+        QSqlQuery sql;
+        sql.exec("select * from liketb;");
+        while(sql.next()) {
+            if(sql.value(0).value<int>() == user_id) {
+                int row = like_w->rowCount();
+                like_w ->setRowCount(row + 1);
+                for(int i = 0; i <= 3; ++i) like_w ->setItem(row, i, new QTableWidgetItem());
+
+                like_w ->item(row, 0) ->setIcon(QIcon(":/coin/like.png"));
+                like_w ->item(row, 1) ->setText(sql.value(2).value<QString>());
+                like_w ->item(row, 2) ->setIcon(QIcon(":/coin/begin.png")); //播放
+//                like_w ->item(row, 3) ->setIcon(QIcon("")); // 添加到歌单
+            }
+        }
+        like_w ->show();
+        local_w ->hide();
         tab_search ->hide();
     }
 }
@@ -850,6 +910,7 @@ void MainWindow::localinit(QTableWidget* lw) {
            qDebug() << "null filename!" << endl;
            return;
         }
+        QString local_like = is_like(this ->filem + "/" + filemlist[i]);
 
         QFont font;
         font.setFamily("幼圆");
@@ -858,13 +919,17 @@ void MainWindow::localinit(QTableWidget* lw) {
          // 新的一首歌
          int row = lw ->rowCount();
          lw ->setFont(font);
-         lw ->setRowCount(row);
-         lw ->insertRow(i);
-         lw ->setRowHeight(i, 45);
+         lw ->setRowCount(row + 1);
+         lw ->setRowHeight(row, 45);
 
-         lw ->setItem(i, 0,  new QTableWidgetItem(filemlist[i]));
-         for(int j = 1; j < 3; ++j) lw ->setItem(row, j,  new QTableWidgetItem());
-         lw ->item(i, 1) ->setIcon(QIcon(":/coin/begin.png"));
+         for(int j = 0; j < 5; ++j) lw ->setItem(row, j,  new QTableWidgetItem());
+
+         if(local_like == "0") lw ->item(row, 0) ->setIcon(QIcon(":/coin/like_c.png"));
+         else lw ->item(row, 0) ->setIcon(QIcon(":/coin/like.png"));
+
+         lw ->item(row, 1) ->setText(filemlist[i]);
+         lw ->item(row, 2) ->setIcon(QIcon(":/coin/begin.png")); // 播放
+//         lw ->item(i, 3) ->setIcon(QIcon(""));
     }  // 录入本地音乐text
 }
 
@@ -950,7 +1015,7 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
         // 重新插入 item
         songqueue ->removeRow(idx);
         buildlrc(lrc_name);
-        boxitem(c_idx + 1, nowlist[idx], ":/coin/delete.png", ":/coin/delete_c.png", songqueue);  // 加入队列 增加 item
+        boxitem(c_idx + 1, nowlist[idx], songqueue);  // 加入队列 增加 item
 
         //重新插入nowlist nowplaylist nowlist_im
         QString nowlist_s = nowlist[idx];
@@ -1020,15 +1085,41 @@ void MainWindow::readmysql(mytablewidget* lw, QString file, QString name) {
         reinit(0); // 初始化
     } else return;
 
-    boxitem(idx, name, ":/coin/delete.png", ":/coin/delete_c.png", lw);  // 加入队列 增加 item
+    boxitem(idx, name, lw);  // 加入队列 增加 item
 
 }
 
 
 void MainWindow::songqueue_fun(int row, int col) {
+    QSqlQuery like_db;
+    QString user_id_s = QString("%1").arg(user_id); // id 字符化
+    bool net = is_net_music(nowplaylist[row]);
+
+   // 添加到 我的喜欢
+    if (col == 0) {
+        QString song_like = is_like(nowplaylist[row]);
+        if(song_like == "0") {  // 是否和本地音乐一起消失
+            songqueue ->item(row, 0) ->setIcon(QIcon(":/coin/like.png"));
+            if (!net)  {
+                int idx = std::find(filemlist.begin(), filemlist.end(), nowlist[row]) - filemlist.begin();
+                local_w ->item(idx, 0) ->setIcon(QIcon(":/coin/like.png"));
+            }
+            like_db.exec("insert into liketb values(" + user_id_s + ",\"" + nowplaylist[row] + "\",\"" + nowlist[row] + "\",\"" + nowlist_im[row] + "\", \"" + nowlist_lrc[row] + "\");");
+            fun_like(like_w, nowlist[row], 0);
+        } else {
+            songqueue ->item(row, 0) ->setIcon(QIcon(":/coin/like_c.png"));
+            if (!net)  {
+                int idx = std::find(filemlist.begin(), filemlist.end(), nowlist[row]) - filemlist.begin();
+                local_w ->item(idx, 0) ->setIcon(QIcon(":/coin/like_c.png"));
+            }
+            like_db.exec("delete from liketb where id = " + user_id_s + " and music = \"" + nowplaylist[row] + "\";");
+            fun_like(like_w, nowlist[row], 1);
+        }
+    }
+
+
     //删除操作
     if (col == 3) {
-        qDebug() << "col == 3 is in! this row is  :  "  << row  << endl;
         QSqlQuery sql;
         QString file = nowplaylist[row];
         QString user_id_s = QString("%1").arg(user_id);
@@ -1045,9 +1136,36 @@ void MainWindow::songqueue_fun(int row, int col) {
 
 //local的功能
 void MainWindow::local_fun(int row, int col) {
-    qDebug() << "local_ininfun!" << endl;
+    QSqlQuery like_db;
+    QString user_id_s = QString("%1").arg(user_id); // id 字符化
+
+    // 当col == 0 时 关于喜爱音乐
+    if(col == 0) {
+        QString local_like = is_like(this ->filem + "/" + filemlist[row]);
+        bool isplay = false;
+        if (nowplaylist.count(this ->filem + "/" + filemlist[row]) != 0) isplay = true;
+        qDebug() << "count is play :   " << nowplaylist.count(this ->filem + "/" + filemlist[row]) << endl;
+         if(local_like == "0") {
+            local_w ->item(row, 0) ->setIcon(QIcon(":/coin/like.png"));
+            if (isplay) {
+                int idx = std::find(nowplaylist.begin(), nowplaylist.end(), this ->filem + "/" + filemlist[row]) - nowplaylist.begin();
+                songqueue ->item(idx, 0) ->setIcon(QIcon(":/coin/like.png"));
+            }
+            like_db.exec("insert into liketb values(" + user_id_s + ",\"" + this ->filem + "/" + filemlist[row] + "\",\"" + getname(filemlist[row]) + "\",\"" + ":/coin/songer.png" + "\", \"本地音乐暂无歌词\");");
+            fun_like(like_w, filemlist[row], 0);
+        } else{
+            local_w ->item(row, 0) ->setIcon(QIcon(":/coin/like_c.png"));
+            if (isplay) {
+                int idx = std::find(nowplaylist.begin(), nowplaylist.end(), this ->filem + "/" + filemlist[row]) - nowplaylist.begin();
+                songqueue ->item(idx, 0) ->setIcon(QIcon(":/coin/like_c.png"));
+            }
+            like_db.exec("delete from liketb where id = " + user_id_s + " and music = \"" + this ->filem + "/" + filemlist[row] + "\";");
+            fun_like(like_w, filemlist[row], 1);
+        }
+    }
+
     // 当col == 1 时播放歌曲
-    if(col == 1) {
+    if(col == 1 || col == 2) {
         insert_nowplay(this ->filem + "/" + filemlist[row], filemlist[row], ":/coin/songer.png", "本地音乐暂无歌词");  // 插入到数据库 音乐队列中
         reinit(1);
         if(emit_i == 0) {
@@ -1066,6 +1184,27 @@ bool MainWindow::is_net_music(QString file) {
         if(buf == "http") return true;
     }
     return false;
+}
+
+
+// like_w的显示
+void MainWindow::fun_like(QTableWidget* l, QString name, int type) {
+    int row = l ->rowCount();
+
+    // 添加
+    if(type == 0) {
+        l ->setRowCount(row + 1);
+
+        for(int i = 0; i <= 3; ++i) l ->setItem(row, i, new QTableWidgetItem());
+        l ->item(row, 0) ->setIcon(QIcon(":/coin/like.png"));
+        l ->item(row, 1) ->setText(name);
+        l ->item(row, 2) ->setIcon(QIcon(":/coin/begin.png"));
+//        l ->item(row, 3) ->setIcon(QIcon());
+    } else {  // 删除
+        for(int i = 0; i <= row; ++i) {
+            if (name == l ->item(i, 1) ->text()) l ->removeRow(i);
+        }
+    }
 }
 
 //将图片变成圆角
@@ -1092,6 +1231,19 @@ void MainWindow::search(QString text, int idx) {
     QString net_search = QString("http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=%1&page=%2&pagesize=18a").arg(text).arg(idx);
     net_request ->setUrl(QUrl(net_search));
     net_manager ->get(*net_request);
+}
+
+
+// 判断是不是喜欢音乐
+QString MainWindow::is_like(QString file) {
+    qDebug() << "is like file is:  "  << file << endl;
+
+    QSqlQuery sql;
+    sql.exec("select * from liketb;");
+    while (sql.next()) {
+       if (sql.value(0).value<int>() == user_id && sql.value(1).value<QString>() == file) return "1";
+    }
+    return "0";
 }
 
 // net_manager finish 响应reply 开始在tableWidget 上显示
