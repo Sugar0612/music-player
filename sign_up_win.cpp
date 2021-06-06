@@ -40,8 +40,8 @@ void sign_up_win::user_sign_up() {
 
     QString _user_name = login_user_name ->text();
     QString _user_password = login_user_password ->text();
-
-    QString exec = QString("insert into user values(" + count + ",\"" + _user_name + "\"," + "\"" + _user_password + "\");");
+    QString cnt_list = QString("%0").arg(0);
+    QString exec = QString("insert into user values(" + count + ",\"" + _user_name + "\"," + "\"" + _user_password + "\", " + cnt_list + ");");
 
     bool ok = selectq.exec(exec);
     if(ok) QMessageBox::information(this, "提示", "注册成功!", QMessageBox::Ok);

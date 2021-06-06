@@ -18,6 +18,7 @@ public:
 
     QSqlDatabase db;  // mysql
     int user_id = -1; // 用户登录的id
+    int song_list_cnt = 0; // 用户歌单号 或者是 歌单数量
     QLabel *user_name_l, *user_password_l;
     QLineEdit *user_name, *user_password;
     QPushButton *sign_in_btn, *sign_up_btn; // 登录 和 注册 界面

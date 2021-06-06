@@ -1233,7 +1233,7 @@ void MainWindow::fun_like_w(int row, int col) {
 
 
     // 点击 播放音乐
-    if (col == 1) {
+    if (col == 1 || col == 2) {
         QSqlQuery like_p;
         like_p.exec("select * from liketb where id = " + user_id_s + ";");
         while(like_p.next()) {

@@ -41,6 +41,7 @@ void sign_in_win::user_sign_in() {
         QString password = selectq.value(2).value<QString>();
         if(name == user_name ->text() && password == user_password ->text()) {
             this ->user_id = selectq.value(0).value<int>();
+            this ->song_list_cnt = selectq.value(3).value<int>();
             break;
         }
     }
@@ -51,7 +52,6 @@ void sign_in_win::user_sign_in() {
         this ->hide();
         user_id = -1;
     }
-
 }
 
 void sign_in_win::initMysql() {

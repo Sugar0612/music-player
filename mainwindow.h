@@ -63,11 +63,12 @@ public:
      bool lrc_open = false;  // 如果false 则显示lrc_win 如果true 则关闭
      int flag = 0; // 当flag = 0 时 maxb 让窗口变大  flag = 1 时让窗口变成原来的样子
      int index = 0;  // 用来在tablewidget 中显示歌曲
-     int is_insert = 0; // 是否真的插入net_music  如果为 0 no , 1 yes!
+     int is_insert = 1; // 是否真的插入net_music  如果为 0 no , 1 yes!
      int emit_i = 0; // 如何 初始化完成 则为1 否则如果使用 本地音乐初始化 则为 0 可以调用 beginplay信号
      int roll, roll_cnt; // roll 代表真实歌词下滚行数, 而 roll_cnt 代表歌词读取次数 当达到4次时 才允许歌词下滚
      int idd; // 歌词item idx
      int user_id = -1; // 用户的id
+     int song_list = 0; // 用户歌单号 或者是 歌单数量
 
 
 
