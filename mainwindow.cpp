@@ -64,7 +64,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
      btnL ->setGeometry(0, 0, 1025, 70);
      btnL ->setStyleSheet("QLabel{background-color: rgb(174, 205, 210); border: solid;}");
      btnL ->setFont(font_L);
-     btnL ->setText("      糖糖音乐");
+     btnL ->setText("     糖糖音乐");
 
 
      search_line = new QLineEdit(btnL); // 搜索框
@@ -309,13 +309,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
             if(idx + 1 < nowlist.size()) {
                 Player ->pause();
                 Playlist ->next();
-                Player ->play();  // 播放
+                QTimer ::singleShot(200, this, [=] () {
+                    Player ->play();  // 播放
+                });
                 initPlayer(); // 初始化播放
                 update();
             }
             else {
                 Playlist ->setCurrentIndex(0);
-                Player ->play();
+                QTimer ::singleShot(200, this, [=] () {
+                    Player ->play();  // 播放
+                });
                 update();
             }
         }
@@ -327,13 +331,19 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         if (!Playlist ->isEmpty()) {
             int idx = Playlist ->currentIndex();
             if(idx - 1 >= 0) {
-                Playlist ->setCurrentIndex(idx - 1); // 切换
+                Player ->pause();
+                Playlist ->previous(); // 上一首
+                QTimer ::singleShot(200, this, [=] () {
+                    Player ->play();  // 播放
+                });
                 initPlayer(); // init 播放btn
                 update();
             }
             else {
                 Playlist ->setCurrentIndex(nowplaylist.size() - 1);
-                Player ->play();
+                QTimer ::singleShot(200, this, [=] () {
+                    Player ->play();  // 播放
+                });
                 update();
             }
         }
@@ -725,6 +735,9 @@ void MainWindow::paintEvent(QPaintEvent *event) {
 }
 
 void MainWindow::updatepos() {
+    if (is_change == 1) time ->stop();
+
+
     // druntime: 总进度 positontime: 当前进度
     this ->positontime += 1000; // 每过一秒 加一秒
     float a;
@@ -755,6 +768,10 @@ void MainWindow::updatepos() {
     rightLabel->setText(all);
     liftLabel->setText(current);
     update();
+    if (is_change == 1) {
+        this ->time ->start();
+        is_change = 0;
+    }
 }
 
 
@@ -1015,7 +1032,9 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
                 network_manager3->get(*network_request3);  // 反馈信号 准备解析json
             }
             Playlist ->removeMedia(0);
-            Player ->play();    // 就是 qt player 这个机制过于博大精深 我吐了真的.......不得不这样写了
+            QTimer::singleShot(200, [=] () {
+               Player ->play();    // 就是 qt player 这个机制过于博大精深 我吐了真的.......不得不这样写了
+            });
         } else {
             Playlist ->removeMedia(idx);
             if(!is_http) {
@@ -1028,7 +1047,9 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
                 network_manager3->get(*network_request3);  // 反馈信号 准备解析json
             }
             Playlist ->setCurrentIndex(c_idx + 1);
-            Player ->play();
+            QTimer::singleShot(200, [=] () {
+               Player ->play();    // 就是 qt player 这个机制过于博大精深 我吐了真的.......不得不这样写了
+            });
         }
 
 
@@ -1142,6 +1163,17 @@ void MainWindow::songqueue_fun(int row, int col) {
         return;
     }
 
+    // 关于 播放列表的播放操作
+    if (col == 1 || col == 2) {
+        Player ->pause();
+        qDebug() << "the cilked name is: " <<  songqueue ->item(row, 1) ->text() << endl;
+        Playlist ->setCurrentIndex(row);
+        QTimer::singleShot(200, [=] () { // 缓冲一下 在播放
+            Player ->play();
+        });
+        return;
+    }
+
 
     //删除操作
     if (col == 3) {
@@ -1233,7 +1265,7 @@ void MainWindow::fun_like_w(int row, int col) {
 
 
     // 点击 播放音乐
-    if (col == 1) {
+    if (col == 1 || col == 2) {
         QSqlQuery like_p;
         like_p.exec("select * from liketb where id = " + user_id_s + ";");
         while(like_p.next()) {

@@ -69,6 +69,7 @@ public:
      int idd; // 歌词item idx
      int user_id = -1; // 用户的id
      int song_list = 0; // 用户歌单号 或者是 歌单数量
+     int is_change = 0; // 当等于 1 时 说明是 改变了歌曲那么 要singleshot
 
 
 
