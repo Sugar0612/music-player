@@ -31,6 +31,8 @@
 #include "sign_in_win.h"
 #include "lrcwidget.h"
 #include "mytablewidget.h"
+#include "create_list.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -68,7 +70,7 @@ public:
      int roll, roll_cnt; // roll 代表真实歌词下滚行数, 而 roll_cnt 代表歌词读取次数 当达到4次时 才允许歌词下滚
      int idd; // 歌词item idx
      int user_id = -1; // 用户的id
-     int song_list = 0; // 用户歌单号 或者是 歌单数量
+     int song_list_id = 0; // 用户歌单号 或者是 歌单数量
      int is_change = 0; // 当等于 1 时 说明是 改变了歌曲那么 要singleshot
 
 
@@ -76,6 +78,7 @@ public:
     sign_in_win* sign; // 登录界面
     mybtn *minb, *maxb, *clsb, *nextbt, *prevbt, *winicon, *listbtn, *btn_search, *sign_in_btn, *local_btn;  // 窗口的最大化 最小化  关闭 下一首 上一首 的按钮 主窗口图标  音乐列表图标, 搜索按钮
     //登录按钮  本地音乐添加窗口
+    mybtn *add_songlist; // 添加歌单按钮
     QSqlDatabase db;   // 用来连接数据库 来调用歌曲
     QMediaPlayer *Player;    // 实现多媒体操控
     QMediaPlaylist *Playlist;  // 多媒体列表
@@ -89,7 +92,7 @@ public:
     mylab* mymusic, *mylist;   // 我的音乐的标签  我的歌单标签
     mylistwidget *musiclist ,*songlist;  // 喜爱歌单 和 本地音乐的创建
     mytablewidget *songqueue;   //播放队列列表
-    QTableWidget *local_w, *like_w;       //本地音乐列表
+    QTableWidget *local_w, *like_w, *list_w;       //本地音乐列表 喜爱音乐窗口 自定义歌单窗口
     QListWidgetItem* likemusiclist, *mylocalmusic;  // 喜爱的歌单 和 本地音乐
     QLineEdit* search_line;   // 搜索框
     QTableWidget *tab_search;  //用来显示歌曲
@@ -97,6 +100,7 @@ public:
     QPushButton *music_map;  //当前播放音乐的图标
     lrcwidget* lrc_w; // 歌词窗口(地基)
     QListWidget* lrc_l; // 歌词显示
+    create_list *n_list; // 显示窗口输入歌单的名字然后创建
 
 
     //http
@@ -147,6 +151,10 @@ private slots:
     void fun_like_w(int, int); // 关于like_w的点击
     void init_local();  // 本地init
     void init_like();  // 喜爱init
+    void songlist_add(QString); // 添加 自定义歌单
+    void initsonglist(); //初始化歌单
+    void show_List_music(QListWidgetItem *);  // 展示自定义歌单音乐
+
 
 public slots:
     void updatepos();   // 更新 播放时间

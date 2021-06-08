@@ -131,6 +131,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     clsb ->setParent(this);
     clsb ->move(this ->width() - 38, 25);
 
+
     //将minb maxb clsb 加入到水平布局中.
     QHBoxLayout * hlay = new QHBoxLayout();    //设置minb maxb clsb 的水平布局让其对于窗口的相对位置不会改变
     hlay ->addWidget(minb);
@@ -144,6 +145,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     // 我的歌单标签
     mylist = new mylab("我的歌单", this);
     mylist ->setGeometry(0, 210, 160, 40);
+
+    //add songlist init
+    add_songlist = new mybtn(":/coin/add.png", ":/coin/add_c.png");
+    add_songlist ->setParent(mylist);
+    add_songlist ->move(mylist ->width() - 60, mylist ->height() - 30);
 
     // 用来显示当前播放歌曲
     musicL = new QLabel(this);
@@ -178,6 +184,22 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     local_w ->setColumnWidth(4, 575);
     local_w->hide();  //隐藏
 
+    // 定义歌单的播放列表
+    list_w = new QTableWidget(this);
+    list_w ->setEditTriggers(QAbstractItemView::NoEditTriggers); // 不可编辑
+    list_w ->setShowGrid(false); // 关闭网格
+    list_w ->setFocusPolicy(Qt::NoFocus); //去掉虚线格
+    list_w ->verticalHeader() ->setHidden(true); // 去掉表头行号
+    list_w ->setColumnCount(6);//设置 列宽 和 列count
+
+    list_w ->setColumnWidth(0, 40);
+    list_w ->setColumnWidth(1, 150);
+    list_w ->setColumnWidth(2, 40);
+    list_w ->setColumnWidth(3, 40);
+    list_w ->setColumnWidth(4, 40);
+    list_w ->setColumnWidth(5, 550);
+    list_w ->hide();  //隐藏
+
     //喜欢音乐
     like_w = new QTableWidget(this);
     like_w ->setEditTriggers(QAbstractItemView::NoEditTriggers); // 不可编辑
@@ -202,6 +224,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
      // 歌单列表
     songlist = new mylistwidget(this);
     songlist ->setGeometry(0, 250, 160, 350);
+    songlist ->setFocusPolicy(Qt::NoFocus);
 
 
     //本地音乐列表
@@ -391,6 +414,22 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     });
 
 
+    // 点击 add_songlist 触发信号
+    connect(add_songlist, &mybtn::clicked, [=] () {
+        if (user_id == -1) {
+            QMessageBox::information(this, "提示", "请先登录", QMessageBox::Ok);
+            return;
+        }
+
+        // list_create name init
+        n_list = new create_list();
+        n_list ->show();
+
+        // 当输入名字完成后, 开始构造新的歌单
+        connect(n_list, &create_list::create_ok, this, &MainWindow::songlist_add);
+    });
+
+
     // 当点击 本地音乐item 时显示本地音乐
     connect(musiclist, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(showlocal(QListWidgetItem*)));
 
@@ -450,6 +489,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
          for(int i = 0; i < songqueue_len; ++i) songqueue ->removeRow(0);
          for(int i = 0; i < local_w_len; ++i) local_w ->removeRow(0);
          for(int i = 0; i < like_w_len; ++i) like_w ->removeRow(0);
+         for (int i = 0; i < songlist ->count(); ++i) songlist ->takeItem(0);
          nowplaylist.clear();  // 初始化nowplay
          nowlist.clear();
          nowlist_im.clear();
@@ -464,8 +504,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
          // 导入id 开始导入对应的歌曲 和 歌单
          this ->user_id = sign ->user_id;
-         this ->song_list = sign ->song_list_cnt;
+         this ->song_list_id = sign ->song_list_cnt;
          innowplay(); // 初始化 该用户的歌单
+         initsonglist(); // 初始化 该用户的自定义歌单
          init_local(); // 初始化 本地音乐
          init_like(); // init 喜爱音乐
          sign_L ->setText(sign ->user_name ->text());
@@ -491,6 +532,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
             an ->start();
         }
     });
+
+
+    // 点击 songlist item 显示 该自定义歌单的音乐
+    connect(songlist, &QListWidget::itemClicked, this, &MainWindow::show_List_music);
+
 
     //songqueue 点击触发
     connect(songqueue, &QTableWidget::cellClicked, this, &MainWindow::songqueue_fun);
@@ -867,12 +913,14 @@ void MainWindow::showlocal(QListWidgetItem* i) {
     if (idx == 0) {  // idx == 0 说明点击的时 本地音乐
         local_w ->show();
         like_w ->hide();
+        list_w ->hide();
         tab_search ->hide();
     }
 
     if (idx == 1) { // idx == 1 说明点击的时 喜爱音乐
         like_w ->show();
         local_w ->hide();
+        list_w ->hide();
         tab_search ->hide();
     }
 }
@@ -943,6 +991,27 @@ void MainWindow::innowplay() {
         MainWindow::showPlayMedia();
      });
 }
+
+
+// songlist init
+void MainWindow::initsonglist() {
+    QFont font_l;
+    font_l.setFamily("幼圆");
+    font_l.setPointSize(11);
+    songlist->setFont(font_l);
+
+    QString user_id_s = QString("%0").arg(user_id);
+    QSqlQuery songlist_sql;
+    for(int i = 0; i < song_list_id; ++i) {
+        QString list_id = QString("%0").arg(i);
+        songlist_sql.exec("select name from listname where id = " + user_id_s + " and listid = " + list_id + ";");
+        songlist_sql.next();
+
+        QString listname =  songlist_sql.value(0).value<QString>();
+        songlist ->addItem(new QListWidgetItem(listname));
+    }
+}
+
 
 // local init
 void MainWindow::init_local() {
@@ -1790,6 +1859,68 @@ void MainWindow::buildlrc(QString s) {
 }
 
 
+void MainWindow::songlist_add(QString name) {
+    QFont font;
+    font.setFamily("幼圆");
+    font.setPointSize(11);
+
+    QString user_id_s = QString("%0").arg(user_id);
+    QString list_id_s = QString("%0").arg(song_list_id);
+
+    QSqlQuery l_sql(db);
+    l_sql.exec("select * from listname;");
+    while(l_sql.next()) {
+        if (l_sql.value(1).value<QString>() == name) {
+            QMessageBox::information(this, "提示", "失败(可能已经有改名字的歌单了)!", QMessageBox::Ok);
+            return;
+        }
+    }
+
+    song_list_id += 1;
+    QString n_list_id = QString("%0").arg(song_list_id);
+    l_sql.exec("insert into listname values(" + user_id_s + ", \"" + name + "\", " + list_id_s + ");");
+    l_sql.exec("update user set cnt = " + n_list_id + " where id = " + user_id_s + ";");
+
+
+    songlist ->addItem(new QListWidgetItem(name));
+}
+
+
+void MainWindow::show_List_music(QListWidgetItem *c_item) {
+    // 初始化
+    list_w ->clear();
+    list_w ->setRowCount(0);
+
+    list_w ->setGeometry(musiclist->width(), btnL->height(),this ->width() - musiclist->width(), this ->height() - btnL->height() - 100);
+    list_w ->setHorizontalHeaderLabels(QStringList() << " " << "歌曲" << " " << " " << " " << " ");
+    list_w ->setStyleSheet("QTableWidget::Item::selected{background: white;}"
+                            "QHeaderView::section{border: 0px solid white};");
+
+    /////////////////////////////////////////////////////////////////////////
+
+    QString user_id_s = QString("%0").arg(user_id);
+    QString list_id = QString("%0").arg(songlist ->row(c_item));
+
+    QSqlQuery i_sql;
+    i_sql.exec("select * from songlist where id = " + user_id_s + ", and listid = " + list_id + ";");
+
+    while(i_sql.next()) {
+        int row = list_w ->rowCount();
+        list_w ->setRowCount(row + 1);
+        for (int i = 0; i < 6; ++i) list_w ->setItem(row, i, new QTableWidgetItem());
+
+        list_w ->item(row, 0) ->setIcon(QIcon(":/coin/like.png"));  // 爱心
+        list_w ->item(row, 1) ->setText(i_sql.value(3).value<QString>()); // 歌名
+        list_w ->item(row, 2) ->setIcon(QIcon(":/coin/begin.png")); // 播放
+        list_w ->item(row, 3) ->setIcon(QIcon(":/coin/delete.png")); // 删除
+        list_w ->item(row, 4) ->setIcon(QIcon("")); // 增添
+    }
+
+    local_w ->hide();
+    tab_search ->hide();
+    like_w ->hide();
+    list_w ->show();
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

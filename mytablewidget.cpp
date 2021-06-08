@@ -13,8 +13,8 @@ mytablewidget::mytablewidget(QWidget *parent) : QTableWidget(parent)
 
     this ->setColumnWidth(0, 40);  // 爱心
     this ->setColumnWidth(1, 100); // 名字
-    this ->setColumnWidth(2, 40);  // 播放
-    this ->setColumnWidth(3, 40);  // 删除
-    this ->setColumnWidth(4, 100); // 增添
+    this ->setColumnWidth(2, 30);  // 播放
+    this ->setColumnWidth(3, 30);  // 删除
+    this ->setColumnWidth(4, 30); // 增添
     this ->setStyleSheet("QTableWidget::Item::selected{background: white;}");
 }
