@@ -16,5 +16,6 @@ mytablewidget::mytablewidget(QWidget *parent) : QTableWidget(parent)
     this ->setColumnWidth(2, 30);  // 播放
     this ->setColumnWidth(3, 30);  // 删除
     this ->setColumnWidth(4, 30); // 增添
-    this ->setStyleSheet("QTableWidget::Item::selected{background: white;}");
+    this ->setStyleSheet("QTableWidget::Item::selected{background: white;}"
+                         "QTableWidget::Item::hover{background: black;};");
 }

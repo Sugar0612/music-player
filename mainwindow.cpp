@@ -855,7 +855,7 @@ void MainWindow::boxitem(int i, QString text, QTableWidget* lw) {
       lw ->item(i, 1) ->setText(getPName(text) + "\n" + getMName(text));
       lw ->item(i, 2) ->setIcon(QIcon(":/coin/begin.png"));
       lw ->item(i, 3) ->setIcon(QIcon(":/coin/delete.png"));
-//      lw ->item(i, 4) ->setIcon(QIcon(""));
+      lw ->item(i, 4) ->setIcon(QIcon(":/coin/add.png"));
 }
 
 
@@ -951,7 +951,7 @@ void MainWindow::localinit(QTableWidget* lw) {
 
          lw ->item(row, 1) ->setText(filemlist[i]);
          lw ->item(row, 2) ->setIcon(QIcon(":/coin/begin.png")); // 播放
-//         lw ->item(i, 3) ->setIcon(QIcon(""));
+         lw ->item(i, 3) ->setIcon(QIcon(":/coin/add.png"));
     }  // 录入本地音乐text
 }
 
@@ -1071,7 +1071,7 @@ void MainWindow::init_like() {
             like_w ->item(row, 0) ->setIcon(QIcon(":/coin/like.png"));
             like_w ->item(row, 1) ->setText(sql.value(2).value<QString>());
             like_w ->item(row, 2) ->setIcon(QIcon(":/coin/begin.png")); //播放
-//                like_w ->item(row, 3) ->setIcon(QIcon("")); // 添加到歌单
+            like_w ->item(row, 3) ->setIcon(QIcon(":/coin/add.png")); // 添加到歌单
         }
     }
 }
@@ -1235,7 +1235,6 @@ void MainWindow::songqueue_fun(int row, int col) {
     // 关于 播放列表的播放操作
     if (col == 1 || col == 2) {
         Player ->pause();
-        qDebug() << "the cilked name is: " <<  songqueue ->item(row, 1) ->text() << endl;
         Playlist ->setCurrentIndex(row);
         QTimer::singleShot(200, [=] () { // 缓冲一下 在播放
             Player ->play();
