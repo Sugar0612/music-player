@@ -557,6 +557,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     //like 点击触发
     connect(like_w, &QTableWidget::cellClicked, this, &MainWindow::fun_like_w);
 
+    // list_w 点击触发
+    connect(list_w, &QTableWidget::cellClicked, this, &MainWindow::fun_list_w);
+
 
     // 关于http 网络歌曲的 json 解析 和相应播放
     connect(net_manager, &QNetworkAccessManager::finished, this, &MainWindow::reply);
@@ -1046,10 +1049,12 @@ void MainWindow::show_list_music(QListWidgetItem *item) {
     while(sql.next()) {
         int row = list_w ->rowCount();
         list_w ->setRowCount(row + 1);
-        qDebug() << sql.value(0).value<QString>();
         for(int i = 0; i < 5; ++i) list_w ->setItem(row, i, new QTableWidgetItem());
 
-        list_w ->item(row, 0) ->setIcon(QIcon(":/coin/like.png"));
+        QString like = is_like(sql.value(0).value<QString>());
+        if(like == "0") list_w ->item(row, 0) ->setIcon(QIcon(":/coin/like_c.png"));
+        else list_w ->item(row, 0) ->setIcon(QIcon(":/coin/like.png"));
+
         list_w ->item(row, 1) ->setText(sql.value(0).value<QString>());
         list_w ->item(row, 2) ->setIcon(QIcon(":/coin/begin.png"));
         list_w ->item(row, 3) ->setIcon(QIcon(":/coin/delete.png"));
@@ -1240,8 +1245,12 @@ void MainWindow::readmysql(mytablewidget* lw, QString file, QString name) {
     } else return;
 }
 
-
+// fun of songqueue
 void MainWindow::songqueue_fun(int row, int col) {
+    g_file = nowplaylist[row];
+    g_name = nowlist[row];
+    g_image = nowlist_im[row];
+    g_lrc = nowlist_lrc[row];
 
     QSqlQuery like_db;
     QString user_id_s = QString("%1").arg(user_id); // id 字符化
@@ -1314,39 +1323,21 @@ void MainWindow::songqueue_fun(int row, int col) {
     return;
 }
 
-void MainWindow::this_songlist(QListWidgetItem *item) {
-    QString user_id_s = QString("%1").arg(user_id); // id 字符化
-    QString name = item ->text(); // 获取这个 歌单的名字
-    QSqlQuery sql(db);
-
-    sql.exec("select * from listname where name = \"" + name + "\"and id = " + QString("%0").arg(user_id) + ";");
-    while(sql.next()) {
-        this ->list_id = QString("%0").arg(sql.value(2).value<int>());
-        qDebug() << "list_id is: " << list_id << endl;
-    }
-
-
-    if (g_row != -1) {
-        QString ex = QString("insert into songlist values(" + user_id_s + ", " + list_id + ", \"" + nowplaylist[g_row] + "\", \"" + nowlist[g_row] + "\", \"" + nowlist_im[g_row] + "\", \"" + nowlist_lrc[g_row] + "\");");
-        g_row = -1;
-        qDebug() << ex << endl;
-        bool ok = sql.exec(ex);
-        if (ok) qDebug() << "insert list ok" << endl;
-        else qDebug() << "no insert list" << endl;
-    }
-    return;
-}
-
 
 //local的功能
 void MainWindow::local_fun(int row, int col) {
+    g_file = this ->filem + filemlist[row];
+    g_name = filemlist[row];
+    g_image = ":/coin/songer.png";
+    g_lrc = "本地音乐暂无歌词";
+
     QSqlQuery like_db;
     QString user_id_s = QString("%1").arg(user_id); // id 字符化
 
     // 当col == 0 时 关于喜爱音乐
     if(col == 0) {
         QString local_like = is_like(filemlist[row]);
-        bool isplay = false;
+        bool isplay = false;  // 是否在播放队列
         if (nowplaylist.count(this ->filem + "/" + filemlist[row]) != 0) isplay = true;
          if(local_like == "0") {
             local_w ->item(row, 0) ->setIcon(QIcon(":/coin/like.png"));
@@ -1384,12 +1375,37 @@ void MainWindow::local_fun(int row, int col) {
         }  // 防止重复激发 timer
         initPlayer();   // 初始化播放按钮
     }
+
+    //收藏 歌曲
+    if(col == 3) {
+        QSqlQuery sql(db);
+        show_w = new show_list(user_id);
+        show_w ->show();
+
+        g_row = row;
+        connect(show_w, &show_list::return_item, this, &MainWindow::this_songlist);
+        return;
+    }
 }
 
 
 //like_w 点击
 void MainWindow::fun_like_w(int row, int col) {
     QString user_id_s = QString("%1").arg(user_id); // id 字符化
+    QSqlQuery like_p;
+    like_p.exec("select * from liketb where id = " + user_id_s + ";");
+    while(like_p.next()) {
+        if (like_w ->item(row, 1) ->text() == like_p.value(2).value<QString>()) {
+            // 插入
+            g_file = like_p.value(1).value<QString>();
+            g_name = like_p.value(2).value<QString>();
+            g_image = like_p.value(3).value<QString>();
+            g_lrc = like_p.value(4).value<QString>();
+            break;
+        }
+    }
+
+
     // 关于爱心歌曲 保存与删除
     if(col == 0) {
         QSqlQuery like_db;
@@ -1423,7 +1439,106 @@ void MainWindow::fun_like_w(int row, int col) {
             }
         }
     }
+
+
+    // 加入歌单
+    if (col == 3) {
+        QSqlQuery sql(db);
+        show_w = new show_list(user_id);
+        show_w ->show();
+
+        g_row = row;
+        connect(show_w, &show_list::return_item, this, &MainWindow::this_songlist);
+        return;
+    }
 }
+
+
+// 播放歌曲发出信号
+void MainWindow::play_net_Music(int row, int col) {
+    // 爱心操作
+    if(col == 0) {
+        is_insert = 0; // 不插入
+        //歌曲请求 row 是行号
+    }
+
+    else if(col == 1 || col == 4) {
+        is_insert = 1; // 插入
+    }
+
+    // 收藏到 歌单
+    else if (col == 5) {
+        in_list = 1; // 收藏
+        is_insert = 0; // 不插入播放队列
+        g_row = row;
+    } else return;
+
+    //歌曲请求 row 是行号
+    QString KGAPISTR1 =QString("http://www.kugou.com/yy/index.php?r=play/getdata"
+    "&hash=%1&album_id=%2&_=1497972864535").arg(v_hash.at(row)) .arg(v_id.at(row));
+    network_request2->setUrl(QUrl(KGAPISTR1));
+    //这句话很重要，我们手动复制url放到浏览器可以获取json，但是通过代码不行，必须加上下面这句才可以
+    network_request2->setRawHeader("Cookie","kg_mid=2333");
+    network_request2->setHeader(QNetworkRequest::CookieHeader, 2333);
+    network_manager2->get(*network_request2);
+}
+
+
+// 每个 歌单的 功能
+void MainWindow::fun_list_w(int row, int col) {
+    QSqlQuery like_db;
+    QString user_id_s = QString("%1").arg(user_id); // id 字符化
+    QString list_id_s = QString("%0").arg(g_list_id);
+    qDebug() << "name is:  "   << list_w ->item(row, 1) ->text() << endl;
+
+    // 爱心
+    if (col == 0) {
+        QString list_like = is_like(list_w ->item(row, 1) ->text());
+        bool isplay = false;  // 是否在播放队列
+        bool islocal = false; // 是否在local中
+        if (nowlist.count(list_w ->item(row, 1) ->text()) != 0) isplay = true;
+        if (filemlist.count(list_w ->item(row, 1) ->text()) != 0) islocal = true;
+        if(list_like == "0") {
+            list_w ->item(row, 0) ->setIcon(QIcon(":/coin/like.png"));
+            if (isplay) {
+                int idx = std::find(nowlist.begin(), nowlist.end(), list_w ->item(row, 1) ->text()) - nowlist.begin();
+                songqueue ->item(idx, 0) ->setIcon(QIcon(":/coin/like.png"));
+            }
+            if (islocal) {
+                int idx = std::find(filemlist.begin(), filemlist.end(), list_w ->item(row, 1) ->text()) - filemlist.begin();
+                local_w ->item(idx, 0) ->setIcon(QIcon(":/coin/like.png"));
+            }
+
+            QSqlQuery list_q;
+            list_q.exec("select music from songlist where id = " + user_id_s + " and listid = " + list_id_s + " and name = \"" + list_w ->item(row, 1) ->text() + "\";");
+            list_q.next();
+            like_db.exec("insert into liketb values(" + user_id_s + ",\"" + list_q.value(0).value<QString>() + "\",\"" + list_w ->item(row, 1) ->text() + "\",\"" + ":/coin/songer.png" + "\", \"本地音乐暂无歌词\");");
+            fun_like(list_w ->item(row, 1) ->text(), 0);
+
+            //初始化
+            init_local();
+            init_like();
+        } else {
+            list_w ->item(row, 0) ->setIcon(QIcon(":/coin/like_c.png"));
+            if (isplay) {
+                int idx = std::find(nowlist.begin(), nowlist.end(), list_w ->item(row, 1) ->text()) - nowlist.begin();
+                songqueue ->item(idx, 0) ->setIcon(QIcon(":/coin/like_c.png"));
+            }
+            if (islocal) {
+                int idx = std::find(filemlist.begin(), filemlist.end(), list_w ->item(row, 1) ->text()) - filemlist.begin();
+                local_w ->item(idx, 0) ->setIcon(QIcon(":/coin/like_c.png"));
+            }
+            like_db.exec("delete from liketb where id = " + user_id_s + " and name = \"" + list_w ->item(row, 1) ->text() + "\";");
+            fun_like(list_w ->item(row, 1) ->text(), 1);
+
+            //初始化
+            init_local();
+            init_like();
+        }
+         return;
+    }
+}
+
 
 // 判断是否是网络音乐
 bool MainWindow::is_net_music(QString file) {
@@ -1457,6 +1572,31 @@ void MainWindow::fun_like(QString name, int type) {
         }
     }
 }
+
+// add to songlist
+void MainWindow::this_songlist(QListWidgetItem *item) {
+    QString user_id_s = QString("%1").arg(user_id); // id 字符化
+    QString name = item ->text(); // 获取这个 歌单的名字
+    QSqlQuery sql(db);
+
+    sql.exec("select * from listname where name = \"" + name + "\"and id = " + QString("%0").arg(user_id) + ";");
+    while(sql.next()) {
+        this ->list_id = QString("%0").arg(sql.value(2).value<int>());
+        qDebug() << "list_id is: " << list_id << endl;
+    }
+
+
+    if (g_row != -1) {
+        QString ex = QString("insert into songlist values(" + user_id_s + ", " + list_id + ", \"" + g_file + "\", \"" + g_name + "\", \"" + g_image + "\", \"" + g_lrc + "\");");
+        g_row = -1;
+        qDebug() << ex << endl;
+        bool ok = sql.exec(ex);
+        if (ok) qDebug() << "insert list ok" << endl;
+        else qDebug() << "no insert list" << endl;
+    }
+    return;
+}
+
 
 //将图片变成圆角
 QPixmap MainWindow::PixmapToRound(QPixmap &pix, int radius) {
@@ -1633,35 +1773,6 @@ void MainWindow::parseJson(QString json, int idx) {
         }
 }
 
-// 播放歌曲发出信号
-void MainWindow::play_net_Music(int row, int col) {
-    // 爱心操作
-    if(col == 0) {
-        is_insert = 0; // 不插入
-        //歌曲请求 row 是行号
-        QString netfile =QString("http://www.kugou.com/yy/index.php?r=play/getdata"
-        "&hash=%1&album_id=%2&_=1497972864535").arg(v_hash.at(row)) .arg(v_id.at(row));
-        network_request2->setUrl(QUrl(netfile));
-        //这句话很重要，我们手动复制url放到浏览器可以获取json，但是通过代码不行，必须加上下面这句才可以
-        network_request2->setRawHeader("Cookie","kg_mid=2333");
-        network_request2->setHeader(QNetworkRequest::CookieHeader, 2333);
-        network_manager2->get(*network_request2);
-        return;
-    }
-
-    if(col == 1) {
-        is_insert = 1; // 插入
-        //歌曲请求 row 是行号
-        QString KGAPISTR1 =QString("http://www.kugou.com/yy/index.php?r=play/getdata"
-        "&hash=%1&album_id=%2&_=1497972864535").arg(v_hash.at(row)) .arg(v_id.at(row));
-        network_request2->setUrl(QUrl(KGAPISTR1));
-        //这句话很重要，我们手动复制url放到浏览器可以获取json，但是通过代码不行，必须加上下面这句才可以
-        network_request2->setRawHeader("Cookie","kg_mid=2333");
-        network_request2->setHeader(QNetworkRequest::CookieHeader, 2333);
-        network_manager2->get(*network_request2);
-    }
-}
-
 
 void MainWindow::reply2(QNetworkReply *re)  // 如果net_messageer finish  判断是否载入 然后进行js
 {
@@ -1772,6 +1883,10 @@ void MainWindow::parseJson2(QString json) {
                                }
                            }
                       }
+                   g_file = net_file;
+                   g_name = net_name;
+                   g_image = net_image;
+                   g_lrc = net_lrc;
 
                    if(is_insert == 1) insert_nowplay(net_file, net_name, net_image, net_lrc);  //将网络歌曲插入到队列
                    else {  // 插入到喜爱音乐里面
@@ -1799,6 +1914,17 @@ void MainWindow::parseJson2(QString json) {
                            like_db.exec("delete from liketb where id = " + user_id_s + " and music = \"" + net_file + "\";");
                            fun_like(net_name, 1);
                        }
+                   }
+
+                   if (in_list == 1) {
+                       in_list = 0; // 变回0 避免不必要的错误
+
+                       // 执行 收藏歌曲操作
+                       QSqlQuery sql(db);
+                       show_w = new show_list(user_id);
+                       show_w ->show();
+
+                       connect(show_w, &show_list::return_item, this, &MainWindow::this_songlist);
                    }
                }
                     //下一篇的歌词获取也是在这里添加代码
@@ -2005,6 +2131,7 @@ void MainWindow::show_List_music(QListWidgetItem *c_item) {
     tab_search ->hide();
     like_w ->hide();
     list_w ->show();
+    g_list_id = list_id;  // 全局变量
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
