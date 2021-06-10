@@ -32,6 +32,7 @@
 #include "lrcwidget.h"
 #include "mytablewidget.h"
 #include "create_list.h"
+#include "show_list.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -72,6 +73,8 @@ public:
      int user_id = -1; // 用户的id
      int song_list_id = 0; // 用户歌单号 或者是 歌单数量
      int is_change = 0; // 当等于 1 时 说明是 改变了歌曲那么 要singleshot
+     QString list_id; // 记录 list_id
+     int g_row = -1;
 
 
 
@@ -101,6 +104,7 @@ public:
     lrcwidget* lrc_w; // 歌词窗口(地基)
     QListWidget* lrc_l; // 歌词显示
     create_list *n_list; // 显示窗口输入歌单的名字然后创建
+    show_list *show_w; // 当点击收藏时 显示所有的自定义歌单
 
 
     //http
@@ -154,6 +158,8 @@ private slots:
     void songlist_add(QString); // 添加 自定义歌单
     void initsonglist(); //初始化歌单
     void show_List_music(QListWidgetItem *);  // 展示自定义歌单音乐
+    void this_songlist(QListWidgetItem *); // 获得 点击的歌单 并存储歌曲
+    void show_list_music(QListWidgetItem *); // 显示 该自定义歌单的歌曲
 
 
 public slots:

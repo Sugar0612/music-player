@@ -29,7 +29,8 @@ SOURCES += \
     sign_up_win.cpp\
     lrcwidget.cpp\
     mytablewidget.cpp\
-    create_list.cpp
+    create_list.cpp\
+    show_list.cpp
 
 HEADERS += \
     mainwindow.h\
@@ -42,7 +43,8 @@ HEADERS += \
     sign_up_win.h\
     lrcwidget.h\
     mytablewidget.h\
-    create_list.h
+    create_list.h\
+    show_list.h
 
 FORMS += \
     mainwindow.ui

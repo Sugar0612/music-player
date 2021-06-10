@@ -983,7 +983,6 @@ void MainWindow::innowplay() {
     for(int i = 0; i < nowplaylist.size(); ++i) {
          readmysql(songqueue, nowplaylist[i], nowlist[i]); // 开始将歌曲一个一个的加入播放队列
     }
-    qDebug() <<  songlist ->count() << endl;
 
     // 初始化第一首歌
     if (nowplaylist.size() > 0) {
@@ -1019,6 +1018,42 @@ void MainWindow::initsonglist() {
 
         QString listname =  songlist_sql.value(0).value<QString>();
         songlist ->addItem(new QListWidgetItem(listname));
+    }
+
+    connect(songlist, &mylistwidget::itemClicked, this, &MainWindow::show_list_music);  // 点击 不同的歌单 显示不同的歌曲
+}
+
+
+// 显示 该自定义歌单的歌曲
+void MainWindow::show_list_music(QListWidgetItem *item) {
+    int listsong_id;
+    QSqlQuery sql(db);
+    QString text = item ->text();
+
+    sql.exec("select * from listname where name = \"" + text + "\"and id = " + QString("%0").arg(user_id) + ";");
+    while(sql.next()) {
+        listsong_id = sql.value(2).value<int>();
+        break;
+    }
+
+    list_w->clear();
+    list_w ->setRowCount(0);
+    list_w ->setGeometry(musiclist->width(), btnL->height(),this ->width() - musiclist->width(), this ->height() - btnL->height() - 100);
+    list_w ->setHorizontalHeaderLabels(QStringList() << " " << "歌曲" << " " << " " << " " << " ");
+    list_w ->setStyleSheet("QTableWidget::Item::selected{background: white;}"
+                            "QHeaderView::section{border: 0px solid white};");
+    sql.exec("select name from songlist where id = " + QString("%0").arg(user_id) + " and listid = " + QString("%0").arg(listsong_id) + ";");
+    while(sql.next()) {
+        int row = list_w ->rowCount();
+        list_w ->setRowCount(row + 1);
+        qDebug() << sql.value(0).value<QString>();
+        for(int i = 0; i < 5; ++i) list_w ->setItem(row, i, new QTableWidgetItem());
+
+        list_w ->item(row, 0) ->setIcon(QIcon(":/coin/like.png"));
+        list_w ->item(row, 1) ->setText(sql.value(0).value<QString>());
+        list_w ->item(row, 2) ->setIcon(QIcon(":/coin/begin.png"));
+        list_w ->item(row, 3) ->setIcon(QIcon(":/coin/delete.png"));
+        list_w ->item(row, 4) ->setIcon(QIcon(":/coin/add.png"));
     }
 }
 
@@ -1177,6 +1212,7 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
     }
 }
 
+
 // 获取当前音乐文件的文件名
 QString MainWindow::getname(QString file) {
     QString ans;
@@ -1186,6 +1222,7 @@ QString MainWindow::getname(QString file) {
     }
     return ans;
 }
+
 
 // 初始化音乐队列 (仅在开启播放器的调用)
 void MainWindow::readmysql(mytablewidget* lw, QString file, QString name) {
@@ -1261,6 +1298,41 @@ void MainWindow::songqueue_fun(int row, int col) {
         nowlist.erase(nowlist.begin() + row, nowlist.begin() + row + 1);
         sql.exec("delete from nowplay where music = '" + file + "' and id = " + user_id_s + ";");
         return;
+    }
+
+
+    // 收藏操作
+    if (col == 4) {
+        QSqlQuery sql(db);
+        show_w = new show_list(user_id);
+        show_w ->show();
+
+        g_row = row;
+        connect(show_w, &show_list::return_item, this, &MainWindow::this_songlist);
+        return;
+    }
+    return;
+}
+
+void MainWindow::this_songlist(QListWidgetItem *item) {
+    QString user_id_s = QString("%1").arg(user_id); // id 字符化
+    QString name = item ->text(); // 获取这个 歌单的名字
+    QSqlQuery sql(db);
+
+    sql.exec("select * from listname where name = \"" + name + "\"and id = " + QString("%0").arg(user_id) + ";");
+    while(sql.next()) {
+        this ->list_id = QString("%0").arg(sql.value(2).value<int>());
+        qDebug() << "list_id is: " << list_id << endl;
+    }
+
+
+    if (g_row != -1) {
+        QString ex = QString("insert into songlist values(" + user_id_s + ", " + list_id + ", \"" + nowplaylist[g_row] + "\", \"" + nowlist[g_row] + "\", \"" + nowlist_im[g_row] + "\", \"" + nowlist_lrc[g_row] + "\");");
+        g_row = -1;
+        qDebug() << ex << endl;
+        bool ok = sql.exec(ex);
+        if (ok) qDebug() << "insert list ok" << endl;
+        else qDebug() << "no insert list" << endl;
     }
     return;
 }

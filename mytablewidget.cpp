@@ -29,7 +29,6 @@ mytablewidget::mytablewidget(QWidget *parent) : QTableWidget(parent)
 void mytablewidget::changeColor(int row, int col) {
     QTableWidgetItem *item = this ->item(pre_row, 0);
     if (item) {
-        qDebug() << "pre row is:  "  << pre_row << endl;
         this ->hover_row_color(pre_row, QColor(255, 255, 255));
     }
 
