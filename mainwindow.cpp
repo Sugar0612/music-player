@@ -467,6 +467,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
        sign ->show();
     });
 
+
     //添加 按钮的功能
     connect(local_btn, &mybtn::clicked, [=] () {
         this ->filem = QFileDialog::getExistingDirectory(this,"", "",QFileDialog::ShowDirsOnly);
@@ -1014,11 +1015,8 @@ void MainWindow::initsonglist() {
 
     QString user_id_s = QString("%0").arg(user_id);
     QSqlQuery songlist_sql;
-    for(int i = 0; i < song_list_id; ++i) {
-        QString list_id = QString("%0").arg(i);
-        songlist_sql.exec("select name from listname where id = " + user_id_s + " and listid = " + list_id + ";");
-        songlist_sql.next();
-
+    songlist_sql.exec("select name from listname where id = " + user_id_s + ";");
+    while(songlist_sql.next()) {
         QString listname =  songlist_sql.value(0).value<QString>();
         songlist ->addItem(new QListWidgetItem(listname));
     }
@@ -1624,17 +1622,27 @@ void MainWindow::fun_like(QString name, int type) {
 void MainWindow::this_songlist(QListWidgetItem *item) {
     QString user_id_s = QString("%1").arg(user_id); // id 字符化
     QString name = item ->text(); // 获取这个 歌单的名字
+    QString list_id_lim;
     QSqlQuery sql(db);
 
-    sql.exec("select * from listname where name = \"" + name + "\"and id = " + QString("%0").arg(user_id) + ";");
+    sql.exec("select * from listname where name = \"" + name + "\"and id = " + user_id_s + ";");
     while(sql.next()) {
-        this ->list_id = QString("%0").arg(sql.value(2).value<int>());
-        qDebug() << "list_id is: " << list_id << endl;
+        list_id_lim = QString("%0").arg(sql.value(2).value<int>());
+        qDebug() << "list_id is: " << list_id_lim << endl;
+    }
+
+
+    sql.exec("select name from songlist where id = " + user_id_s + " and listid = " + list_id_lim + ";");
+    while(sql.next()) {
+        if (sql.value(0).value<QString>() == g_name) {
+            QMessageBox::information(this, "提示", "该首歌已经录入了~", QMessageBox::Ok);
+            return;
+        }
     }
 
 
     if (g_row != -1) {
-        QString ex = QString("insert into songlist values(" + user_id_s + ", " + list_id + ", \"" + g_file + "\", \"" + g_name + "\", \"" + g_image + "\", \"" + g_lrc + "\");");
+        QString ex = QString("insert into songlist values(" + user_id_s + ", " + list_id_lim + ", \"" + g_file + "\", \"" + g_name + "\", \"" + g_image + "\", \"" + g_lrc + "\");");
         g_row = -1;
         qDebug() << ex << endl;
         bool ok = sql.exec(ex);
@@ -1699,7 +1707,7 @@ void MainWindow::reply(QNetworkReply* re) {
 
 // 解析 json 显示到 tablewidget上
 void MainWindow::parseJson(QString json, int idx) {
-        QString songname_original; //歌曲名
+        QString songname_original;   //歌曲名
             QString singername;        //歌手
             QString hashStr;           //hash
             QString album_name;        //专辑
@@ -2126,10 +2134,10 @@ void MainWindow::songlist_add(QString name) {
     QString list_id_s = QString("%0").arg(song_list_id);
 
     QSqlQuery l_sql(db);
-    l_sql.exec("select * from listname;");
+    l_sql.exec("select name from listname where id = " + user_id_s + ";");
     while(l_sql.next()) {
-        if (l_sql.value(1).value<QString>() == name) {
-            QMessageBox::information(this, "提示", "失败(可能已经有改名字的歌单了)!", QMessageBox::Ok);
+        if (l_sql.value(0).value<QString>() == name) {
+            QMessageBox::information(this, "提示", "失败(可能已经有该名字的歌单了)!", QMessageBox::Ok);
             return;
         }
     }
@@ -2154,10 +2162,24 @@ void MainWindow::show_List_music(QListWidgetItem *c_item) {
     list_w ->setStyleSheet("QTableWidget::Item::selected{background: white;}"
                             "QHeaderView::section{border: 0px solid white};");
 
+
+    //delete init
+    if (delete_btn) delete_btn ->hide(); // 上一个 消失
+
+    QWidget *w = new QWidget();
+    delete_btn = new mybtn(":/coin/cls.png", ":/coin/cls_1.png");
+    delete_btn ->setParent(w);
+    delete_btn ->move(90, 10);
+    songlist ->setItemWidget(c_item, w);
     /////////////////////////////////////////////////////////////////////////
 
     QString user_id_s = QString("%0").arg(user_id);
-    QString list_id = QString("%0").arg(songlist ->row(c_item));
+    QString name = c_item ->text();
+
+    QSqlQuery sql;
+    sql.exec("select listid from listname where id = " + user_id_s + " and name = \"" + name + "\";");
+    sql.next();
+    QString list_id = QString("%0").arg(sql.value(0).value<int>());
 
     QSqlQuery i_sql;
     i_sql.exec("select * from songlist where id = " + user_id_s + ", and listid = " + list_id + ";");
@@ -2179,6 +2201,20 @@ void MainWindow::show_List_music(QListWidgetItem *c_item) {
     like_w ->hide();
     list_w ->show();
     g_list_id = list_id;  // 全局变量
+
+    connect(delete_btn, &mybtn::clicked, [=] () { // 当点击delete_btn 删除这个歌单
+        QMessageBox::StandardButton b = QMessageBox::question(this, "询问", "是否删除这个歌单?", QMessageBox::Yes | QMessageBox::No);
+        if (b == QMessageBox::Yes) {
+            int row = songlist ->row(c_item);
+            songlist ->takeItem(row);
+            delete_btn = nullptr;
+
+
+            QSqlQuery sql_l;
+            sql_l.exec("delete from songlist where id = " + user_id_s + " and listid = " + list_id + ";");
+            sql_l.exec("delete from listname where id = " + user_id_s + " and listid = " + list_id + ";");
+        }
+    });
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

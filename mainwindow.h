@@ -82,7 +82,7 @@ public:
     sign_in_win* sign; // 登录界面
     mybtn *minb, *maxb, *clsb, *nextbt, *prevbt, *winicon, *listbtn, *btn_search, *sign_in_btn, *local_btn;  // 窗口的最大化 最小化  关闭 下一首 上一首 的按钮 主窗口图标  音乐列表图标, 搜索按钮
     //登录按钮  本地音乐添加窗口
-    mybtn *add_songlist; // 添加歌单按钮
+    mybtn *add_songlist, *delete_btn = nullptr; // 添加歌单按钮 删除歌单按钮
     QSqlDatabase db;   // 用来连接数据库 来调用歌曲
     QMediaPlayer *Player;    // 实现多媒体操控
     QMediaPlaylist *Playlist;  // 多媒体列表

@@ -10,6 +10,8 @@ class create_list : public QWidget
 {
     Q_OBJECT
 public:
+    void initmysql();
+
     QPushButton *ok, *cancel;
     QLineEdit *name;
     explicit create_list(QWidget *parent = nullptr);

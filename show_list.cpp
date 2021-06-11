@@ -4,6 +4,8 @@
 
 show_list::show_list(int id, QWidget *parent) : QWidget(parent), user_id(id)
 {
+
+    setWindowFlag(Qt::FramelessWindowHint);  // 删除以前的 最大化 最小化 关闭自己写
     this ->setFixedSize(200, 350);
 
     // connect mysql
@@ -27,7 +29,12 @@ void show_list::initMysql() {
 
 
 void show_list::show_song_list() {
+    QFont font;
+    font.setFamily("幼圆");
+    font.setPointSize(12);
+
     list = new mylistwidget(this);
+    list ->setFont(font);
     list ->setGeometry(0, 0, this ->width(), this ->height());
     QString user_id_s = QString("%0").arg(user_id);
 
