@@ -1161,7 +1161,7 @@ void MainWindow::insert_nowplay(QString name, QString m_name, QString p_name, QS
                 // 载入本地音乐的图片
                 local_img(p_name);
             } else {
-                Playlist ->insertMedia(idx + 1, QUrl(nowplaylist[idx]));
+                Playlist ->insertMedia(c_idx + 1, QUrl(nowplaylist[idx]));
                 network_request3->setUrl(QUrl(p_name));
                 network_manager3->get(*network_request3);  // 反馈信号 准备解析json
             }
@@ -1305,6 +1305,8 @@ void MainWindow::songqueue_fun(int row, int col) {
         Playlist ->removeMedia(row); // 多媒体删除 音乐列表 歌曲
         nowplaylist.erase(nowplaylist.begin() + row, nowplaylist.begin() + row + 1);
         nowlist.erase(nowlist.begin() + row, nowlist.begin() + row + 1);
+        nowlist_im.erase(nowlist_im.begin() + row, nowlist_im.begin() + row + 1);
+        nowlist_lrc.erase(nowlist_lrc.begin() + row, nowlist_lrc.begin() + row + 1);
         sql.exec("delete from nowplay where music = '" + file + "' and id = " + user_id_s + ";");
         return;
     }
@@ -1486,10 +1488,18 @@ void MainWindow::play_net_Music(int row, int col) {
 
 // 每个 歌单的 功能
 void MainWindow::fun_list_w(int row, int col) {
-    QSqlQuery like_db;
+    QSqlQuery list_db;
     QString user_id_s = QString("%1").arg(user_id); // id 字符化
     QString list_id_s = QString("%0").arg(g_list_id);
-    qDebug() << "name is:  "   << list_w ->item(row, 1) ->text() << endl;
+
+    list_db.exec("select * from songlist where id = " + user_id_s + " and listid = " + list_id_s + " and name = \"" + list_w ->item(row, 1) ->text() + "\";");
+    while (list_db.next()) {
+        g_file = list_db.value(2).value<QString>();
+        g_name = list_db.value(3).value<QString>();
+        g_image = list_db.value(4).value<QString>();
+        g_lrc = list_db.value(5).value<QString>();
+        break;
+    }
 
     // 爱心
     if (col == 0) {
@@ -1512,7 +1522,7 @@ void MainWindow::fun_list_w(int row, int col) {
             QSqlQuery list_q;
             list_q.exec("select music from songlist where id = " + user_id_s + " and listid = " + list_id_s + " and name = \"" + list_w ->item(row, 1) ->text() + "\";");
             list_q.next();
-            like_db.exec("insert into liketb values(" + user_id_s + ",\"" + list_q.value(0).value<QString>() + "\",\"" + list_w ->item(row, 1) ->text() + "\",\"" + ":/coin/songer.png" + "\", \"本地音乐暂无歌词\");");
+            list_db.exec("insert into liketb values(" + user_id_s + ",\"" + list_q.value(0).value<QString>() + "\",\"" + list_w ->item(row, 1) ->text() + "\",\"" + ":/coin/songer.png" + "\", \"本地音乐暂无歌词\");");
             fun_like(list_w ->item(row, 1) ->text(), 0);
 
             //初始化
@@ -1528,7 +1538,7 @@ void MainWindow::fun_list_w(int row, int col) {
                 int idx = std::find(filemlist.begin(), filemlist.end(), list_w ->item(row, 1) ->text()) - filemlist.begin();
                 local_w ->item(idx, 0) ->setIcon(QIcon(":/coin/like_c.png"));
             }
-            like_db.exec("delete from liketb where id = " + user_id_s + " and name = \"" + list_w ->item(row, 1) ->text() + "\";");
+            list_db.exec("delete from liketb where id = " + user_id_s + " and name = \"" + list_w ->item(row, 1) ->text() + "\";");
             fun_like(list_w ->item(row, 1) ->text(), 1);
 
             //初始化
@@ -1537,6 +1547,43 @@ void MainWindow::fun_list_w(int row, int col) {
         }
          return;
     }
+
+
+
+    //播放
+    if(col == 1 || col == 2) {
+        QSqlQuery list_q;
+        list_q.exec("select * from songlist where id = " + user_id_s + " and listid = " + list_id_s + " and name = \"" + list_w ->item(row, 1) ->text() + "\";");
+        while(list_q.next()) {
+            QString f = list_q.value(2).value<QString>();
+            QString n = list_q.value(3).value<QString>();
+            QString im = list_q.value(4).value<QString>();
+            QString l = list_q.value(5).value<QString>();
+            insert_nowplay(f, n, im, l);
+        }
+    }
+
+
+    // 删除
+    if (col == 3) {
+        QSqlQuery list_q;
+        QString ex = QString("delete from songlist where id = " + user_id_s + " and listid = " + list_id_s + " and name = \"" + list_w ->item(row, 1) ->text() + "\";");
+        list_q.exec(ex);
+        list_w ->removeRow(row);
+    }
+
+
+    // 收藏
+    if(col == 4) {
+        QSqlQuery sql(db);
+        show_w = new show_list(user_id);
+        show_w ->show();
+
+        g_row = row;
+        connect(show_w, &show_list::return_item, this, &MainWindow::this_songlist);
+        return;
+    }
+
 }
 
 
