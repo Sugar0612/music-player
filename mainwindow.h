@@ -33,6 +33,7 @@
 #include "mytablewidget.h"
 #include "create_list.h"
 #include "show_list.h"
+#include "lrc_win_main.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -76,13 +77,14 @@ public:
      QString list_id; // 记录 list_id
      int g_row = -1; // 用于 加入收藏队列时 使用保存 item的行号
      int in_list = 0;  //当 为1 表示 要执行 收藏操作,  为 0时 则不执行
+     int is_looper = 0; // 是否歌曲单曲播放
 
 
 
     sign_in_win* sign; // 登录界面
     mybtn *minb, *maxb, *clsb, *nextbt, *prevbt, *winicon, *listbtn, *btn_search, *sign_in_btn, *local_btn;  // 窗口的最大化 最小化  关闭 下一首 上一首 的按钮 主窗口图标  音乐列表图标, 搜索按钮
     //登录按钮  本地音乐添加窗口
-    mybtn *add_songlist, *delete_btn = nullptr; // 添加歌单按钮 删除歌单按钮
+    mybtn *add_songlist, *delete_btn = nullptr, *lrc_btn; // 添加歌单按钮 删除歌单按钮 点击在windows 窗口显示歌词
     QSqlDatabase db;   // 用来连接数据库 来调用歌曲
     QMediaPlayer *Player;    // 实现多媒体操控
     QMediaPlaylist *Playlist;  // 多媒体列表
@@ -90,7 +92,7 @@ public:
     QString pname, mname; // 歌手名字 和 歌曲名字
     QString net_file, net_name, net_image, net_lrc; // 记录http 的路径  歌曲名字 歌曲图片 歌词
     QStringList filemlist, nowplaylist, nowlist, nowlist_im, list_col_table, nowlist_lrc, song_col_name, likelist;  // 本地音乐文件路径, 当前播放音乐路径  歌词   当前的播放音乐名字（当放入songqueue 后可以clear）
-    startbtn* playbt ,*volbt;                  // 音乐的播放按钮  音量按钮
+    startbtn* playbt ,*volbt, *looper_m;                  // 音乐的播放按钮  音量按钮  播放模式按钮
     QLabel* musicL, *btnL ,*liftLabel ,*rightLabel, *PlayL, *sign_L;     // 用来显示当前播放歌曲  窗口按钮的封装 左时间显示 右边时间显示 播放控件的封装 登录标签
 //    mytabwidget *mainmusic; // 设置音乐播放器 主窗口!
     mylab* mymusic, *mylist;   // 我的音乐的标签  我的歌单标签
@@ -108,6 +110,8 @@ public:
     show_list *show_w; // 当点击收藏时 显示所有的自定义歌单
     QString g_file, g_name, g_image, g_lrc; // 用于 收藏歌单
     QString g_list_id; // 用于歌单操作使用
+    lrc_win_main *lrc; // 歌词主窗口
+    bool is_show = false; // 当为true 时显示歌词主窗口
 
 
     //http

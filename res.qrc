@@ -34,5 +34,8 @@
         <file>coin/like_c.png</file>
         <file>coin/add.png</file>
         <file>coin/add_c.png</file>
+        <file>coin/looper.png</file>
+        <file>coin/no_looper.png</file>
+        <file>coin/lrc_word.png</file>
     </qresource>
 </RCC>

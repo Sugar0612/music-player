@@ -30,7 +30,8 @@ SOURCES += \
     lrcwidget.cpp\
     mytablewidget.cpp\
     create_list.cpp\
-    show_list.cpp
+    show_list.cpp\
+    lrc_win_main.cpp
 
 HEADERS += \
     mainwindow.h\
@@ -44,7 +45,8 @@ HEADERS += \
     lrcwidget.h\
     mytablewidget.h\
     create_list.h\
-    show_list.h
+    show_list.h\
+    lrc_win_main.h
 
 FORMS += \
     mainwindow.ui

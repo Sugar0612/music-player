@@ -142,6 +142,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     mymusic = new mylab("我的音乐", this);
     mymusic ->setGeometry(0, 70, 160, 40);
 
+    // 循环播放 按钮
+    looper_m = new startbtn(":/coin/no_looper.png", ":/coin/no_looper.png", ":/coin/looper.png", ":/coin/looper.png");
+    looper_m ->setParent(this);
+    looper_m ->move(340, 627);
+
+
+    // lrc_btn init
+    lrc_btn = new mybtn(":/coin/lrc_word.png", ":/coin/lrc_word.png");
+    lrc_btn ->setParent(this);
+    lrc_btn ->move(760, 625);
+
     // 我的歌单标签
     mylist = new mylab("我的歌单", this);
     mylist ->setGeometry(0, 210, 160, 40);
@@ -226,6 +237,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     songlist ->setGeometry(0, 250, 160, 350);
     songlist ->setFocusPolicy(Qt::NoFocus);
 
+
+    // 歌词主窗口
+    lrc = new lrc_win_main();
+    lrc ->hide();
 
     //本地音乐列表
     mylocalmusic = new QListWidgetItem(musiclist);
@@ -561,6 +576,21 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     // list_w 点击触发
     connect(list_w, &QTableWidget::cellClicked, this, &MainWindow::fun_list_w);
 
+    //改变模式
+    connect(looper_m, &startbtn::clicked, [=] () {
+        is_looper = 1 ^ is_looper;  // 变成循环
+    });
+
+    //lrc_btn 点击显示歌词床口
+    connect(lrc_btn, &mybtn::clicked, [=] () {
+        if (is_show) {
+            is_show = false;
+            lrc ->hide();
+        } else {
+            is_show = true;
+            lrc ->show();
+        }
+    });
 
     // 关于http 网络歌曲的 json 解析 和相应播放
     connect(net_manager, &QNetworkAccessManager::finished, this, &MainWindow::reply);
@@ -823,6 +853,13 @@ void MainWindow::updatepos() {
     int allb = minint % 10;
     int allc = secondint / 10;
     int alld = secondint % 10;
+    if (is_looper == 1 && curra == alla && currb == allb && currc == allc && currd == alld) {
+        Player ->stop();
+        int idx = Playlist ->currentIndex();
+        Playlist ->setCurrentIndex(idx);
+        Player ->play();
+        this ->positontime = 0;
+    }
     current = QString("%0%1:%2%3").arg(curra) .arg(currb).arg(currc). arg(currd);
     all = QString("%0%1:%2%3").arg(alla) .arg(allb) .arg(allc) .arg(alld);
     rightLabel->setText(all);
