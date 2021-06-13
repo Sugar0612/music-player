@@ -69,6 +69,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
      search_line = new QLineEdit(btnL); // 搜索框
      search_line ->setGeometry(180, 18, 180, 40);
+     search_line ->setStyleSheet("QLineEdit{border-style:none; padding:6px; border-radius: 50px;}");
 
      //登录按钮
      sign_in_btn = new mybtn(":/coin/sign_in.png", ":/coin/sign_in_c.png");
@@ -265,7 +266,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     tab_search ->setHorizontalHeaderLabels(list_col_table);// 设置列数的 名字
     tab_search ->setGeometry(musiclist->width(), btnL ->height(), this ->width() - musiclist ->width(), this ->height() - btnL ->height() - 100);
     tab_search ->stackUnder(songlist); // 优先级在songlist 之下
-    tab_search ->setSelectionBehavior(QAbstractItemView::SelectRows);   //设置整行选择
     tab_search ->hide();
 
     tab_search ->setEditTriggers(QAbstractItemView::NoEditTriggers); // 不可编辑
@@ -656,7 +656,7 @@ void MainWindow::initPro() {
 
                             int idx = lrc_idx[j.key()]; // 找到item
                             int p_idx = p_lrcit == lrcMap.begin() - 1 ? -1 : lrc_idx[p_lrcit.key()]; // 找到上一个item
-
+                            lrc ->l ->setText(lrc_itm[idx] ->text()); // 将内嵌歌词窗口的 歌词 给主窗口歌词
                             //恢复之前歌词字体大小
                             if(p_idx >= 0) {
                                 lrc_itm[p_idx] ->setFont(p_font);
@@ -689,10 +689,13 @@ void MainWindow::initPro() {
 void MainWindow::initMysql() {
     db = QSqlDatabase::addDatabase("QMYSQL");    // 加载mysql 驱动
     db.setHostName("localhost");  // 主机名
+    db.setPort(3306); // 端口
     db.setDatabaseName("musicbase"); // 库名
     db.setUserName("root"); //用户名
     db.setPassword("tsy20010612"); // 密码
-    db.open();  //打开数据库
+    bool ok = db.open();  //打开数据库
+    if (ok) qDebug() << "connect ok!" << endl;
+
 }
 
 // 用来 单独封装控制 播放
@@ -1505,8 +1508,7 @@ void MainWindow::play_net_Music(int row, int col) {
 
     // 收藏到 歌单
     else if (col == 5) {
-        in_list = 1; // 收藏
-        is_insert = 0; // 不插入播放队列
+        in_list = 1; // 收藏不插入播放队列
         g_row = row;
     } else return;
 

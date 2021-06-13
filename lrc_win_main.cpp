@@ -8,10 +8,11 @@ lrc_win_main::lrc_win_main(QWidget *parent) : QWidget(parent)
     QFont font;
     font.setFamily("幼圆");
     font.setPointSize(20);
-
+    font.setWeight(25);
     setWindowFlag(Qt::FramelessWindowHint);  // 删除以前的 最大化 最小化 关闭自己写
 
-    this ->resize(400, 80);
+
+    this ->resize(500, 80);
 
     this->setWindowFlags(Qt::FramelessWindowHint); //使得窗体透明
     this->setAttribute(Qt::WA_TranslucentBackground, true); // 透明显示
@@ -21,7 +22,7 @@ lrc_win_main::lrc_win_main(QWidget *parent) : QWidget(parent)
     l = new QLabel(this);
     l ->setGeometry(0, 0, this ->width(), this ->height());
     l ->setFont(font);
-    l ->setStyleSheet("QLabel{color: white;}");
+    l ->setStyleSheet("QLabel{color: rgb(128, 0, 128);}");
     l ->setText("糖糖音乐");
 }
 
