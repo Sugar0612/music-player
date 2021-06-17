@@ -2,6 +2,8 @@
 #include <QLabel>
 #include <QPainter>
 #include <QFont>
+#include <QIcon>
+
 
 lrc_win_main::lrc_win_main(QWidget *parent) : QWidget(parent)
 {
@@ -11,7 +13,8 @@ lrc_win_main::lrc_win_main(QWidget *parent) : QWidget(parent)
     font.setWeight(25);
     setWindowFlag(Qt::FramelessWindowHint);  // 删除以前的 最大化 最小化 关闭自己写
 
-
+    this ->setWindowTitle("歌词窗口");
+    this ->setWindowIcon(QIcon(":/coin/mymusic.png"));  // 主窗口的图标设置!
     this ->resize(500, 80);
 
     this->setWindowFlags(Qt::FramelessWindowHint); //使得窗体透明

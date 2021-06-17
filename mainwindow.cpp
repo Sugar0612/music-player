@@ -312,6 +312,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     // 关闭窗口按钮
     connect(clsb, &QPushButton::clicked, [=](){
        this ->close();
+        lrc ->hide();
     });
 
 
@@ -493,8 +494,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         QSqlQuery sql;
         QString user_id_qstr = QString("%1").arg(user_id);
         sql.exec("insert into localmusic values(" + user_id_qstr + ",\"" + this ->filem + "\");");
-        local_w ->setGeometry(musiclist ->width(), btnL->height(), this->width() - musiclist ->width(), this ->height() - btnL->height());
+        local_w ->setGeometry(musiclist ->width(), btnL->height(), this->width() - musiclist ->width(), this ->height() - btnL->height() - 100);
         local_w ->setStyleSheet("QListWidget::Item{height: 60px;}");
+        local_w ->setHorizontalHeaderLabels(QStringList() << " " << "歌曲" << " " << " " << " ");
         localinit(local_w); // init QlistWidget
         local_w ->show();
         tab_search ->hide();
@@ -688,11 +690,11 @@ void MainWindow::initPro() {
 
 void MainWindow::initMysql() {
     db = QSqlDatabase::addDatabase("QMYSQL");    // 加载mysql 驱动
-    db.setHostName("localhost");  // 主机名
+    db.setHostName("8.133.131.37");  // 主机名
     db.setPort(3306); // 端口
     db.setDatabaseName("musicbase"); // 库名
-    db.setUserName("root"); //用户名
-    db.setPassword("tsy20010612"); // 密码
+    db.setUserName("user"); //用户名
+    db.setPassword("Tsy20010612"); // 密码
     bool ok = db.open();  //打开数据库
     if (ok) qDebug() << "connect ok!" << endl;
 
@@ -1509,6 +1511,7 @@ void MainWindow::play_net_Music(int row, int col) {
     // 收藏到 歌单
     else if (col == 5) {
         in_list = 1; // 收藏不插入播放队列
+        is_insert = 2;
         g_row = row;
     } else return;
 
@@ -1983,7 +1986,7 @@ void MainWindow::parseJson2(QString json) {
                    g_lrc = net_lrc;
 
                    if(is_insert == 1) insert_nowplay(net_file, net_name, net_image, net_lrc);  //将网络歌曲插入到队列
-                   else {  // 插入到喜爱音乐里面
+                   else if (is_insert == 0) {  // 插入到喜爱音乐里面
                        QSqlQuery like_db;
                        int row = -1;
                        for(int i = 0; i < tab_search->rowCount(); ++i) {

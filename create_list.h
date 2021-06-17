@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QLabel>
 #include "mybtn.h"
 
 class create_list : public QWidget
@@ -14,6 +15,7 @@ public:
 
     QPushButton *ok, *cancel;
     QLineEdit *name;
+    QLabel *list_name;
     explicit create_list(QWidget *parent = nullptr);
 
 signals:

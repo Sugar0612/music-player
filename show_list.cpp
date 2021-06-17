@@ -19,12 +19,14 @@ show_list::show_list(int id, QWidget *parent) : QWidget(parent), user_id(id)
 
 
 void show_list::initMysql() {
-    db = QSqlDatabase::addDatabase("QMYSQL");
-    db.setHostName("localhost");
-    db.setDatabaseName("musicbase");
-    db.setUserName("root");
-    db.setPassword("tsy20010612");
-    db.open();
+    db = QSqlDatabase::addDatabase("QMYSQL");    // 加载mysql 驱动
+    db.setHostName("8.133.131.37");  // 主机名
+    db.setPort(3306); // 端口
+    db.setDatabaseName("musicbase"); // 库名
+    db.setUserName("user"); //用户名
+    db.setPassword("Tsy20010612"); // 密码
+    bool ok = db.open();  //打开数据库
+    if (ok) qDebug() << "connect ok!" << endl;
 }
 
 

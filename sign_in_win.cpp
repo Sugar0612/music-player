@@ -6,6 +6,8 @@
 
 sign_in_win::sign_in_win(QWidget *parent) : QWidget(parent)
 {
+    this ->setWindowTitle("登录窗口");
+    this ->setWindowIcon(QIcon(":/coin/mymusic.png"));  // 主窗口的图标设置!
     this ->setFixedSize(350, 200);
     user_name = new QLineEdit(this);
     user_password = new QLineEdit(this);
@@ -56,11 +58,11 @@ void sign_in_win::user_sign_in() {
 
 void sign_in_win::initMysql() {
     db = QSqlDatabase::addDatabase("QMYSQL");    // 加载mysql 驱动
-    db.setHostName("localhost");  // 主机名
+    db.setHostName("8.133.131.37");  // 主机名
+    db.setPort(3306); // 端口
     db.setDatabaseName("musicbase"); // 库名
-    db.setUserName("root"); //用户名
-    db.setPassword("tsy20010612"); // 密码
+    db.setUserName("user"); //用户名
+    db.setPassword("Tsy20010612"); // 密码
     bool ok = db.open();  //打开数据库
-    if(ok) qDebug() << "connect !" << endl;
-    else qDebug() << "error!" << endl;
+    if (ok) qDebug() << "connect ok!" << endl;
 }
