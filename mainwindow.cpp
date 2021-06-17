@@ -313,6 +313,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(clsb, &QPushButton::clicked, [=](){
        this ->close();
         lrc ->hide();
+        Player ->stop();
+        exit(0);
     });
 
 
@@ -966,7 +968,7 @@ void MainWindow::showlocal(QListWidgetItem* i) {
 //    qDebug() << "filem is :   "  << this ->filem << endl;
     int idx = musiclist ->row(i);  //点击的是我的音乐的第几行item （共两行）
     if (idx == 0) {  // idx == 0 说明点击的时 本地音乐
-        local_w ->show();
+        if (this ->filem.size() != 0) local_w ->show();
         like_w ->hide();
         list_w ->hide();
         tab_search ->hide();
@@ -1120,6 +1122,7 @@ void MainWindow::init_local() {
 
     if(this ->filem.size() == 0) {
         emit file_null();
+        local_w ->hide();
         return;
     }
 

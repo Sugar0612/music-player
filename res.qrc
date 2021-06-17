@@ -18,7 +18,6 @@
         <file>coin/vol.png</file>
         <file>coin/unvol_c.png</file>
         <file>coin/vol_c.png</file>
-        <file>coin/mymusic.png</file>
         <file>coin/list.png</file>
         <file>coin/list_c.png</file>
         <file>coin/delete.png</file>
@@ -37,5 +36,6 @@
         <file>coin/looper.png</file>
         <file>coin/no_looper.png</file>
         <file>coin/lrc_word.png</file>
+        <file>coin/mymusic.png</file>
     </qresource>
 </RCC>
