@@ -11,6 +11,6 @@
     5.支持歌词界面 以及歌词悬浮界面
     对源代码感兴趣的朋友 请访问我的github: 如果有什么问题欢迎和我私信
 # 关于歌曲搜索功能 参考
-[](https://zxfdog.blog.csdn.net/article/details/107992205)
+[https://zxfdog.blog.csdn.net/article/details/107992205](https://zxfdog.blog.csdn.net/article/details/107992205)
     
 感谢大家支持和使用
