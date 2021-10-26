@@ -18,5 +18,7 @@
     对源代码感兴趣的朋友 请访问我的github: 如果有什么问题欢迎和我私信
 # 关于歌曲搜索功能 参考
 [https://zxfdog.blog.csdn.net/article/details/107992205](https://zxfdog.blog.csdn.net/article/details/107992205)
-    
+
+
+本作品只是为了让大家更好的了解qt，熟练其中的机制，不可以用来倒卖和商用，若出现后果去本人无关。
 感谢大家支持和使用
