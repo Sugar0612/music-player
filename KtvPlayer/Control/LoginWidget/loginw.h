@@ -6,8 +6,15 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QRadioButton>
+#include <QCheckBox>
+
+#include <QJsonDocument>   // json
+#include <QJsonParseError>
+#include <QJsonObject>
+#include <QJsonArray>
 
 #include <Control/NewButton.h>
+#include "Tool/MD5.h"
 
 #include <QFont>
 #include <QDebug>
@@ -18,14 +25,18 @@ class LoginW : public QWidget
 public:
     LoginW(QWidget *p, int x, int y, int width, int height);
     void ClearLineEditText();
+    bool CheckUserinfo();
+    QJsonObject JsonReadOnlyInFile();
 
 private:
     const QString ResPath = ":/Resources/Texture/";
+    const QString path = "E:\\Qt\\pro\\KtvPlayer\\localData\\userinfo.json";
 
     QFont NorFont, Radfont;
     QLabel *AccountLab, *PassLab{};
     QLineEdit *account, *password;
     QRadioButton *Manager{}, *User{};
+    QCheckBox *rememberMe{};
 
     NewButton *LoginBtn{}, *RegisterBtn{};
 
@@ -35,6 +46,7 @@ private slots:
     void ClickedManger();
     void ClickedUser();
 
+    void JsonWriteInFile(QString account, QString pwd);
 signals:
     void ShowRegister();
     void RequestLogin(QString, QString);

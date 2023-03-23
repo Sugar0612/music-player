@@ -4,11 +4,10 @@ NewListWidget::NewListWidget(QWidget *parent, QStringList itemList) : QListWidge
 {
     // 关于 mylistwidget的 风格 (qss)
     this -> setStyleSheet("QListWidget{color:rgb(0, 0, 0); background:rgb(232,232,232);border:0px solid black; border-radius: 10px;}"
-                                           "QListWidget::Item{height:45px; border: 0px solid white; border-radius: 10px;padding-left:10px;}"
+                                           "QListWidget::Item{height:40px; border: 0px solid white; border-radius: 10px;padding-left:10px;}"
                                            "QListWidget::Item:hover{color:rgb(0, 0, 0);background: rgb(185,211,238); border: 0px solid white;}"
                                            "QListWidget::Item:selected{color:rgb(0, 0, 0); background: rgb(185,211,238); border: 0px solid white;}");
     this ->setFocusPolicy(Qt::NoFocus);
-
 
     font.setFamily("幼圆");
     font.setPointSize(12);

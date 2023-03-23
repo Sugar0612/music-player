@@ -44,13 +44,18 @@ LoginW::LoginW(QWidget *p, int x, int y, int width, int height)
     Manager = new QRadioButton(this);
     Manager->setText("我是管理员");
     Manager->setFont(Radfont);
-    Manager->move(PassLab->x(), PassLab->y() + 50);
+    Manager->move(PassLab->x() - 20, PassLab->y() + 50);
 
     User = new QRadioButton(this);
     User->setChecked(true);
     User->setText("我是用户");
     User->setFont(Radfont);
     User->move(Manager->x() + 180, Manager->y());
+
+    rememberMe = new QCheckBox(this);
+    rememberMe->setText("记住密码");
+    rememberMe->setFont(Radfont);
+    rememberMe->move(User->x() + 180, User->y());
 
     connect(Manager, &QRadioButton::clicked, this, &LoginW::ClickedManger);
     connect(User, &QRadioButton::clicked, this, &LoginW::ClickedUser);
@@ -61,7 +66,12 @@ LoginW::LoginW(QWidget *p, int x, int y, int width, int height)
     connect(LoginBtn, &QPushButton::clicked, this, [=] () {
         QString name = account->text();
         QString pwd = password->text();
-        if (Type == 1) emit RequestLogin(name, pwd);
+        if (Type == 1) {
+            emit RequestLogin(name, pwd);
+            if (rememberMe->isChecked()) {
+                JsonWriteInFile(name, pwd);
+            }
+        }
         else emit RequestLoginManager(name, pwd);
     });
 }
@@ -78,4 +88,38 @@ void LoginW::ClickedManger() {
 void LoginW::ClearLineEditText() {
     account->setText("");
     password->setText("");
+}
+
+void LoginW::JsonWriteInFile(QString account, QString pwd) {
+    QJsonObject json;
+    Md5 md5;
+    QString md5_pwd = md5.MD5Encryption(pwd);
+    json["account"] = account;
+    json["password"] = md5_pwd;
+    QString jsonStr = QString(QJsonDocument(json).toJson());
+
+    QFile file(path);
+    file.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream txtOutput(&file);
+    txtOutput << jsonStr;
+    file.close();
+}
+
+QJsonObject LoginW::JsonReadOnlyInFile() {
+    QFile file(path);
+    if(!file.open(QIODevice::ReadOnly)) return QJsonObject();
+
+    QByteArray jsonByteData = file.readAll();
+    QJsonParseError jsonError;
+    QJsonDocument jsonDcm(QJsonDocument::fromJson(jsonByteData, &jsonError));
+
+    if(jsonError.error != QJsonParseError::NoError) return QJsonObject();
+
+    file.close();
+    return jsonDcm.object();
+}
+
+bool LoginW::CheckUserinfo() {
+    QFile file(path);
+    return file.exists();
 }

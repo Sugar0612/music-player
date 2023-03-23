@@ -259,6 +259,22 @@ void Sql::DeleteMusicInThisList(QString listname, mst info) {
     return;
 }
 
+QPair<bool, QString> Sql::GetUserPassword(QString account, QString pwd_md5) {
+    if(account.size() == 0) return QPair<bool, QString>(false, "");
+
+    Md5 md5;
+    QString execStr = QString("select * from user where name = \"%0\";").arg(account);
+    sql.exec(execStr);
+
+    while(sql.next()) {
+        QString pwd = sql.value(2).value<QString>();
+        if (pwd_md5 == md5.MD5Encryption(pwd)) return QPair<bool, QString>(true, pwd);
+    }
+    sql.clear();
+
+    return QPair<bool, QString>(false, "");
+}
+
 Sql::~Sql() {
     db.close();
 }

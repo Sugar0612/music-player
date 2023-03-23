@@ -9,6 +9,7 @@
 #include <QPixmap>
 #include <QMouseEvent>
 #include <list>
+#include <QPair>
 
 #include <QMainWindow>
 #include <QLabel>
@@ -130,6 +131,7 @@ private slots:
 
     void BuildTableSong(QVector<mst>, QString);
 
+    void RequestLogin();
 private:
     Ui::MainWindow *ui;
 
