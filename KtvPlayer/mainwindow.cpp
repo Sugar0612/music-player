@@ -485,7 +485,7 @@ void MainWindow::NetworkSearch() {
 void MainWindow::BuildSearchTable(QVector<mst> info) {
     TableSearch->setRowCount(0);
     for (int i = 0; i < info.size(); ++i) {
-        TableSearch->setRowCount(i + 1);
+        TableSearch ->setRowCount(i + 1);
 
         TableSearch->setItem(i,0,new QTableWidgetItem(info[i].name));
         TableSearch->item(i,0)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);//文字居中
@@ -576,14 +576,6 @@ void MainWindow::SelectSongListWidgetItem(QListWidgetItem* item) {
         break;
     case 3:
         OpenWgt("LangueOrderWdt");
-        break;
-    case 4:
-        if (currSonglistIndex != index) {
-            network->SearchRank();
-            currSonglistIndex = index;
-            currSingerIndex = -1;
-            currLangueIndex = -1;
-        }
         break;
     default:
         break;
