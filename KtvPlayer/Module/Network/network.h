@@ -36,24 +36,19 @@ private slots:
     void reply(QNetworkReply *re);  // 如果net_messager finish  判断是否载入 然后进行js
     void reply2(QNetworkReply *reply);  // 如果net_messageer finish  判断是否载入 然后进行js
     void reply3(QNetworkReply *re);  //图片
-    void RankReply(QNetworkReply*); //rank songs.
 
 private:
     //Http. Network.
-    QNetworkAccessManager *net_manager, *network_manager2, *network_manager3, *network_manager4;
-    QNetworkRequest *net_request, *network_request2, *network_request3, *net_request4;
+    QNetworkAccessManager *net_manager, *network_manager2, *network_manager3;
+    QNetworkRequest *net_request, *network_request2, *network_request3;
     QPixmap imgPix;
 
-private:
+public:
     void parseJson(QString, int);  // 将歌曲放入 tableWidget
     void parseJson2(QString json);  //播放音乐解析Json
-    void parseJson3(QString, int);  //播放音乐解析Json
-    void RankParseJson(QString, int);
-    void ParseSingerAndSong(QString&, QString&, QString); // 解析歌曲名和歌手名
 public:
     QVector<mst> infoArray;
     void search(QString, int);  // 连接http 搜索歌曲
-    void SearchRank(); // rank歌曲排名
     void ClearNetworkVector();
     void SelectNetworkMusic(int row);
     mst GetMusicStruct() { return infoArray[TargetRow]; };
