@@ -7,7 +7,6 @@
 #include <QDebug>
 
 #include "Tool/MusicStruct.h"
-#include "Tool/MD5.h"
 
 class Sql : public QWidget
 {
@@ -44,7 +43,6 @@ public slots:
     QVector<mst> GetMusicInThisList(QString listname);
     void DeleteMusicInThisList(QString listname, mst info);
 
-    QPair<bool, QString> GetUserPassword(QString account, QString pwd_md5);
 private:
     QSqlDatabase db;
     QSqlQuery sql;
@@ -53,7 +51,7 @@ private:
 
     bool CheckSongGroup(QString name);
     bool CheckListofSong(mst data, QString listname);
-    QString MD5Encryption(QString pwd);
+
 signals:
     void GetSqlMscListFinished(QVector<mst>);
     void GetSqlSongGroupsFinished(QVector<QString>);

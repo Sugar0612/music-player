@@ -46,7 +46,6 @@ HEADERS += \
     Module/MusicPlayer/MusicPlayer.h \
     Module/Network/network.h \
     Module/Sql/Sql.h \
-    Tool/MD5.h \
     Tool/MusicStruct.h \
     mainwindow.h
 

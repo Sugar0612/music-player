@@ -178,7 +178,7 @@ void MainWindow::LableInit() {
 }
 
 void MainWindow::ListWidgetInit() {
-    OrderSongLW = new NewListWidget(this, QStringList() << "热门歌曲" << "歌手点歌" << "拼音点歌" << "语种点歌" << "歌曲排名");
+    OrderSongLW = new NewListWidget(this, QStringList() << "热门歌曲" << "歌手点歌" << "拼音点歌" << "语种点歌");
     OrderSongLW->setGeometry(0, WinLab->height() + OrderSongLab->height(), 160, 200);
     OrderSongLW->setFocusPolicy(Qt::NoFocus); // 去掉虚线框
 
@@ -347,7 +347,9 @@ void MainWindow::ButtonSlot() {
 
     connect(LrcBtn, &QPushButton::clicked, this, &MainWindow::ShowAndHideLrcWgt);
 
-    connect(LoginBtn, &QPushButton::clicked, this, &MainWindow::RequestLogin);
+    connect(LoginBtn, &QPushButton::clicked, this, [=] () {
+        OpenWgt("login");
+    });
 }
 
 void MainWindow::SliderSlot() {
@@ -822,27 +824,12 @@ void MainWindow::SelectItemOperate(int row, int col) {
         sql->InsertListOfSong(ThisListSong[row], ListofSongWgt->TargetName);
     }
     else if (col == 7) {
+        qDebug() << "delete idx: " << row << " and ThisListSong Size: " << ThisListSong.size();
         sql->DeleteMusicInThisList(TableSong->GetClickItemText(), ThisListSong[row]);
         ThisListSong.removeAt(row);
         TableSong->removeRow(row);
     }
-}
 
-void MainWindow::RequestLogin() {
-     if (login->CheckUserinfo()) {
-        QJsonObject json = login->JsonReadOnlyInFile();
-        QPair<bool, QString> p = sql->GetUserPassword(json["account"].toString(), json["password"].toString());
-
-        if (p.first) {
-            LoginUser(json["account"].toString(), p.second);
-        }
-        else {
-            OpenWgt("login");
-        }
-     }
-     else {
-        OpenWgt("login");
-     }
 }
 
 MainWindow::~MainWindow()
