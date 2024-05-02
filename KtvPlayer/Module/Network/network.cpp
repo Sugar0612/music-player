@@ -157,6 +157,7 @@ void Network::reply2(QNetworkReply *re)  // 如果net_messageer finish  判断�
 
 //解析 json
 void Network::parseJson2(QString json) {
+    qDebug() << "=============== json: " << json;
     QString audio_name;//歌手-歌名
     QString play_url;//播放地址
     QString img;
@@ -220,31 +221,31 @@ void Network::parseJson2(QString json) {
                    }
                    // 歌词显示
                    //idd = 0; // 初始化 lrc_itm 的索引
-                if (valuedataObject.contains("lyrics")) //lrc
+                    if (valuedataObject.contains("lyrics")) //lrc
+                    {
+                        QJsonValue play_url_value = valuedataObject.take("lyrics");
+                        if (play_url_value.isString())
+                        {
+                            QString play_lrcStr = play_url_value.toString();
+                            if (play_urlStr != "")
+                            {
+                                if (play_lrcStr != "")
+                                {	//将整个歌词给s
+                                    //qDebug() << play_lrcStr;
+                                    QString lrc = play_lrcStr;
+                                    infoArray[TargetRow].lrcStr = lrc;
+                                }
+                                else
+                                {
+                                    //没有歌词;
+                                }
+                            }
+                        }
+                    }
+                    emit GetMusicFinished();
+                }
+                else  //下一篇的歌词获取也是在这里添加代码
                 {
-                       QJsonValue play_url_value = valuedataObject.take("lyrics");
-                       if (play_url_value.isString())
-                       {
-                           QString play_lrcStr = play_url_value.toString();
-                           if (play_urlStr != "")
-                           {
-                               if (play_lrcStr != "")
-                               {	//将整个歌词给s
-                                   //qDebug() << play_lrcStr;
-                                   QString lrc = play_lrcStr;
-                                   infoArray[TargetRow].lrcStr = lrc;
-                               }
-                               else
-                               {
-                                   //没有歌词;
-                               }
-                           }
-                       }
-                  }
-                  emit GetMusicFinished();
-              }
-                    //下一篇的歌词获取也是在这里添加代码
-            else {
                    qDebug()<<"出错";
                 }
             }
