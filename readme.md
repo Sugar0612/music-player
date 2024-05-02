@@ -6,7 +6,7 @@ QT 5.14.2
 ____________________________          ____________________________          __________________________
 |    id    |  varchar(10)  |          |    id    |  varchar(10)  |          |   user   | varchar(10) |
 |   user   |  varchar(100) |          |  account |  varchar(100) |          | listname | varchar(10) |
-| password |  varchar(100) |          | password |  varchar(100)  |          ——————————————————————————
+| password |  varchar(100) |          | password |  varchar(100) |          ——————————————————————————
 ————————————————————————————          ————————————————————————————
 
         Songlist                             Listofsong
