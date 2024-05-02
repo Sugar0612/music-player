@@ -1,4 +1,4 @@
-
+2024-5-02需要的同学可以去[KTVPlayer分支](https://github.com/Sugar0612/music-player/tree/KTVPlayer)使用音乐播放器，目前main分支不在维护了。
 # 糖糖音乐
 # ![music](img/ex.png)
 # 搜索界面
