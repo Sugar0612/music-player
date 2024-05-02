@@ -46,6 +46,7 @@ void MusicPlayer::Play() {
     if(currMediaIdx == -1) {
         Next();
     }
+
     qDebug() << "Play() -> " << currMediaIdx;
     Player->play();
     IsPlay = true;
@@ -53,6 +54,7 @@ void MusicPlayer::Play() {
     emit GetMusicNetImg(PlayList[currMediaIdx].img);
     emit ChangedPlayerState(IsPlay);
     emit GetMusicName(PlayList[currMediaIdx].name);
+    emit IsThisLikeMusic(PlayList[currMediaIdx]);
 }
 
 void MusicPlayer::Pause() {
@@ -102,12 +104,30 @@ void MusicPlayer::Mute() {
     emit ChangedVolumeState(!IsVolume);
 }
 
+void MusicPlayer::Like() {
+    IsLike = true;
+    emit ChangedLikeThisMusic(IsLike);
+}
+
+void MusicPlayer::NotLike() {
+    IsLike = false;
+    emit ChangedLikeThisMusic(IsLike);
+}
+
 void MusicPlayer::SwitchPlayerStatue() {
     IsPlay == false ? (Play()) : (Pause());
 }
 
 void MusicPlayer::SwitchVolumeState() {
     IsVolume == false ? (NotMute()) : (Mute());
+}
+
+void MusicPlayer::SwitchLikeState() {
+    IsLike == false ? (Like()) : (NotLike());
+    if(currMediaIdx >= 0) {
+        IsLike == false ? (emit CancleLike(PlayList[currMediaIdx])) :
+                (emit AddLike(PlayList[currMediaIdx]));
+    }
 }
 
 int MusicPlayer::GetMusicDuration() {

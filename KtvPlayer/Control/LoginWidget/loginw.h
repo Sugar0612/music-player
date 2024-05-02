@@ -28,6 +28,9 @@ public:
     bool CheckUserinfo();
     QJsonObject JsonReadOnlyInFile();
 
+    bool IsRememberMe() { return rememberMe->isChecked(); }
+    void JsonWriteInFile(QString account, QString pwd);
+
 private:
     const QString ResPath = ":/Resources/Texture/";
     const QString path = "E:\\Qt\\pro\\KtvPlayer\\localData\\userinfo.json";
@@ -45,8 +48,6 @@ private:
 private slots:
     void ClickedManger();
     void ClickedUser();
-
-    void JsonWriteInFile(QString account, QString pwd);
 signals:
     void ShowRegister();
     void RequestLogin(QString, QString);

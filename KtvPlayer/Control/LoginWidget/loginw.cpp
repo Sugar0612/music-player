@@ -68,9 +68,9 @@ LoginW::LoginW(QWidget *p, int x, int y, int width, int height)
         QString pwd = password->text();
         if (Type == 1) {
             emit RequestLogin(name, pwd);
-            if (rememberMe->isChecked()) {
-                JsonWriteInFile(name, pwd);
-            }
+//            if (rememberMe->isChecked()) {
+//                JsonWriteInFile(name, pwd);
+//            }
         }
         else emit RequestLoginManager(name, pwd);
     });

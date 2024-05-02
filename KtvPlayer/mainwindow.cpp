@@ -8,7 +8,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     Init();
     Connect();
-    NetworkSearch(); // TODO.
+    NetworkSearch();
 }
 
 void MainWindow::Init() {
@@ -135,6 +135,11 @@ void MainWindow::ButtonInit() {
     LrcBtn->setParent(this);
     LrcBtn->move(VolBtn->x() + 150, VolBtn->y());
 
+    //Like Button Init.
+    LikeBtn = new NewButton(ResPath + "like_c.png", ResPath + "like_c.png", ResPath + "like.png", ResPath + "like.png");
+    LikeBtn->setParent(this);
+    LikeBtn->move(LrcBtn->x() + 50, LrcBtn->y());
+
     // Login Button init.
     LoginBtn = new QPushButton(this);
     LoginBtn->setGeometry(MinBtn->x() - 200, MinBtn->y() - 15, 150, 50);
@@ -160,12 +165,12 @@ void MainWindow::LableInit() {
     SongGroupLab->setGeometry(0, OrderSongLab->y() + OrderSongLab->height() + 200, 160, 40);
 
     CurrTimeLab = new QLabel(this);
-    CurrTimeLab->setGeometry((ui->MusicSlider->x()) - 75, ui->MusicSlider->y() - 15, 50, 50);
+    CurrTimeLab->setGeometry(ui->MusicSlider->x() - 75, ui->MusicSlider->y() - 15, 65, 50);
     CurrTimeLab ->setFont(LabFont);
     CurrTimeLab->setText("00:00");
 
     DurTimeLab = new QLabel(this);
-    DurTimeLab->setGeometry((ui->MusicSlider->x() + ui->MusicSlider->width()) + 30, ui->MusicSlider->y() - 15, 50, 50);
+    DurTimeLab->setGeometry((ui->MusicSlider->x() + ui->MusicSlider->width()) + 30, ui->MusicSlider->y() - 15, 65, 50);
     DurTimeLab->setFont(LabFont);
     DurTimeLab->setText("00:00");
 
@@ -178,12 +183,12 @@ void MainWindow::LableInit() {
 }
 
 void MainWindow::ListWidgetInit() {
-    OrderSongLW = new NewListWidget(this, QStringList() << "热门歌曲" << "歌手点歌" << "拼音点歌" << "语种点歌" << "歌曲排名");
+    OrderSongLW = new NewListWidget(this, QStringList() << "热门歌曲" << "歌手点歌" << "拼音点歌" << "语种点歌" << "歌曲排名" << "评分系统");
     OrderSongLW->setGeometry(0, WinLab->height() + OrderSongLab->height(), 160, 200);
     OrderSongLW->setFocusPolicy(Qt::NoFocus); // 去掉虚线框
 
     SongGroupLW = new NewListWidget(this, QStringList());
-    SongGroupLW->setGeometry(0, SongGroupEdit->y() + SongGroupEdit->height(), 160, 170);
+    SongGroupLW->setGeometry(0, SongGroupEdit->y() + SongGroupEdit->height(), 160, 210);
     SongGroupLW->setFocusPolicy(Qt::NoFocus); // 去掉虚线框
 
     SingerOrderWdt = new NewListWidget(this, SingerList);
@@ -195,6 +200,11 @@ void MainWindow::ListWidgetInit() {
     LangueOrderWdt->setGeometry(OrderSongLab->width() + 2, WinLab->height() + 25, LangueOrderWdt->width(), LangueOrderWdt->height() - 25);
     LangueOrderWdt->hide();
     WgtManager["LangueOrderWdt"] = LangueOrderWdt;
+
+    DayOrderWdt = new NewListWidget(this, QStringList() << "日榜" << "月榜" << "年榜" << "返回");
+    DayOrderWdt->setGeometry(OrderSongLab->width() + 2, WinLab->height() + 25, LangueOrderWdt->width(), LangueOrderWdt->height() - 25);
+    DayOrderWdt->hide();
+    WgtManager["DayOrderWdt"] = DayOrderWdt;
 
     SongListWgt = new SongListWidget(this);
     SongListWgt->setGeometry(width(), height() - 100 - 530, 250, 530);
@@ -235,13 +245,13 @@ void MainWindow::TableInit() {
     TableSearch->setHorizontalHeaderLabels(ColTableList);// 设置列数的 名字
     TableSearch->setGeometry(OrderSongLab->width(), WinLab->height(), this ->width() - OrderSongLab->width() + 20, this ->height() - WinLab->height() - 101);
 
-    TableSearch->setColumnWidth(0, TableSearch->width() / 7);
-    TableSearch->setColumnWidth(1, (TableSearch->width() / 7));
-    TableSearch->setColumnWidth(2, (TableSearch->width() / 7));
-    TableSearch->setColumnWidth(3, (TableSearch->width() / 7));
-    TableSearch->setColumnWidth(4, TableSearch->width() / 7);
-    TableSearch->setColumnWidth(5, TableSearch->width() / 7);
-    TableSearch->setColumnWidth(6, TableSearch->width() / 7);
+    TableSearch->setColumnWidth(0, TableSearch->width() / 5);
+    TableSearch->setColumnWidth(1, TableSearch->width() / 5 / 3);
+    TableSearch->setColumnWidth(2, TableSearch->width() / 5 / 3);
+    TableSearch->setColumnWidth(3, TableSearch->width() / 5 / 3);
+    TableSearch->setColumnWidth(4, TableSearch->width() / 5);
+    TableSearch->setColumnWidth(5, TableSearch->width() / 5);
+    TableSearch->setColumnWidth(6, TableSearch->width() / 5);
     TableSearch->hide();
 
     WgtManager["TableSearch"] = TableSearch;
@@ -253,9 +263,9 @@ void MainWindow::TableInit() {
     TableSong->setGeometry(OrderSongLab->width(), WinLab->height(), this ->width() - OrderSongLab->width() + 20, this ->height() - WinLab->height() - 101);
 
     TableSong->setColumnWidth(0, TableSong->width() / 8);
-    TableSong->setColumnWidth(1, (TableSong->width() / 8));
-    TableSong->setColumnWidth(2, (TableSong->width() / 8));
-    TableSong->setColumnWidth(3, (TableSong->width() / 8));
+    TableSong->setColumnWidth(1, TableSong->width() / 8);
+    TableSong->setColumnWidth(2, TableSong->width() / 8);
+    TableSong->setColumnWidth(3, TableSong->width() / 8);
     TableSong->setColumnWidth(4, TableSong->width() / 8);
     TableSong->setColumnWidth(5, TableSong->width() / 8);
     TableSong->setColumnWidth(6, TableSong->width() / 8);
@@ -333,6 +343,7 @@ void MainWindow::ButtonSlot() {
     connect(FastForBtn, &QPushButton::clicked, Player, &MusicPlayer::Fastward);
     connect(RewindBtn, &QPushButton::clicked, Player, &MusicPlayer::Rewind);
     connect(VolBtn, &QPushButton::clicked, Player, &MusicPlayer::SwitchVolumeState);
+    connect(LikeBtn, &QPushButton::clicked, Player, &MusicPlayer::SwitchLikeState);
     connect(SearchBtn, &QPushButton::clicked, this, &MainWindow::ClickedSearchButton);
     connect(AddBtn, &QPushButton::clicked, this,  &MainWindow::AddSongGroup);
 
@@ -344,9 +355,7 @@ void MainWindow::ButtonSlot() {
     }
 
     connect(MusicListBtn, &QPushButton::clicked, this, &MainWindow::ShowMusicList);
-
     connect(LrcBtn, &QPushButton::clicked, this, &MainWindow::ShowAndHideLrcWgt);
-
     connect(LoginBtn, &QPushButton::clicked, this, &MainWindow::RequestLogin);
 }
 
@@ -388,6 +397,7 @@ void MainWindow::NetworkSlot() {
 void MainWindow::MusicPlayerSlot() {
     connect(Player, &MusicPlayer::ChangedPlayerState, PlayBtn, &NewButton::SwitchButtonIcon);
     connect(Player, &MusicPlayer::ChangedVolumeState, VolBtn, &NewButton::SwitchButtonIcon);
+    connect(Player, &MusicPlayer::ChangedLikeThisMusic, LikeBtn, &NewButton::SwitchButtonIcon);
     connect(Player, &MusicPlayer::GetMusicName, this, &MainWindow::SetMusicNameLabTxt);
     connect(Player, &MusicPlayer::SetLrcTxt, lrcWgt, &LrcWgt::SetLrc);
 
@@ -422,6 +432,10 @@ void MainWindow::MusicPlayerSlot() {
         DurTimeLab->setText("00:00");
         ui->MusicSlider->setValue(0);
     });
+
+    connect(Player, &MusicPlayer::AddLike, sql, &Sql::RequestLikeList);
+    connect(Player, &MusicPlayer::CancleLike, sql, &Sql::RequestCancleLikeList);
+    connect(Player, &MusicPlayer::IsThisLikeMusic, sql, &Sql::checkLikeMusic);
 }
 
 void MainWindow::TableSlot() {
@@ -440,6 +454,7 @@ void MainWindow::ListWidgetSlot() {
     connect(OrderSongLW, &NewListWidget::itemClicked, this, &MainWindow::SelectSongListWidgetItem);
     connect(SingerOrderWdt, &NewListWidget::itemClicked, this, &MainWindow::SelectSingerListWidgetItem);
     connect(LangueOrderWdt, &NewListWidget::itemClicked, this, &MainWindow::SelectLanguListWidgetItem);
+    connect(DayOrderWdt, &NewListWidget::itemClicked, this, &MainWindow::SelectDayListWidgetItem);
     connect(SongListWgt, &SongListWidget::DeleteListMusic, Player, &MusicPlayer::DeleteMusicInMediaPlayer);
     connect(SongListWgt, &SongListWidget::RequestPlayMusic, Player, &MusicPlayer::PlayerMusic);
     connect(SongGroupLW, &NewListWidget::DeleteSongGroup, sql, &Sql::DeleteSongGroup);
@@ -467,6 +482,14 @@ void MainWindow::SqlSlot() {
     connect(sql, &Sql::GetSqlMscListFinished, SongListWgt, &SongListWidget::BuildSongListInit);
     connect(sql, &Sql::GetSqlSongGroupsFinished, this, &MainWindow::BuildSongGruops);
     connect(sql, &Sql::GetSqlSongListFinished, ListofSongWgt, &PlayList::GetListofSong);
+    connect(sql, &Sql::ThisIsLikeMusic, this, [=] () {
+        Player->SetLike(true);
+        LikeBtn->SwitchButtonIcon(true);
+    });
+    connect(sql, &Sql::ThisNotLikeMusic, this, [=] () {
+        Player->SetLike(false);
+        LikeBtn->SwitchButtonIcon(false);
+    });
 }
 
 void MainWindow::SetMinWindow(bool) {
@@ -485,20 +508,21 @@ void MainWindow::NetworkSearch() {
 void MainWindow::BuildSearchTable(QVector<mst> info) {
     TableSearch->setRowCount(0);
     for (int i = 0; i < info.size(); ++i) {
-        TableSearch ->setRowCount(i + 1);
+        TableSearch->setRowCount(i + 1);
 
+        // todo..
         TableSearch->setItem(i,0,new QTableWidgetItem(info[i].name));
         TableSearch->item(i,0)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);//文字居中
 
-        TableSearch->setItem(i,1,new QTableWidgetItem("Play"));
+        TableSearch->setItem(i,1,new QTableWidgetItem(""));
         TableSearch->item(i, 1)->setIcon(QIcon(ResPath + "begin.png"));
         TableSearch->item(i, 1)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
 
-        TableSearch->setItem(i,2,new QTableWidgetItem("NextPlay"));
+        TableSearch->setItem(i,2,new QTableWidgetItem(""));
         TableSearch->item(i, 2)->setIcon(QIcon(ResPath + "looper.png"));
         TableSearch->item(i, 2)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
 
-        TableSearch->setItem(i,3,new QTableWidgetItem("Add playlist"));
+        TableSearch->setItem(i,3,new QTableWidgetItem(""));
         TableSearch->item(i, 3)->setIcon(QIcon(ResPath + "add.png"));
         TableSearch->item(i, 3)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
 
@@ -564,8 +588,8 @@ void MainWindow::SelectSongListWidgetItem(QListWidgetItem* item) {
         if (currSonglistIndex != index) {
             network->search(item->text(), 10);
             currSonglistIndex = index;
-            currSingerIndex = -1;
-            currLangueIndex = -1;
+            //currSingerIndex = -1;
+            //currLangueIndex = -1;
         }
         break;
     case 1:
@@ -577,6 +601,17 @@ void MainWindow::SelectSongListWidgetItem(QListWidgetItem* item) {
     case 3:
         OpenWgt("LangueOrderWdt");
         break;
+    case 4:
+        if (currSonglistIndex != index) {
+            network->SearchRank();
+            currSonglistIndex = index;
+            //currSingerIndex = -1;
+            //currLangueIndex = -1;
+        }
+        break;
+    case 5:
+        OpenWgt("DayOrderWdt");
+        break;
     default:
         break;
     }
@@ -584,32 +619,55 @@ void MainWindow::SelectSongListWidgetItem(QListWidgetItem* item) {
 
 void MainWindow::SelectSingerListWidgetItem(QListWidgetItem* item) {
     int index = SingerOrderWdt->row(item);
+    currSonglistIndex = -1;
     if (index == SingerList.size() - 1) {
         SingerOrderWdt->hide();
         return;
     }
 
-    if (currSingerIndex != index) {
+//    if (currSingerIndex != index) {
         network->search(item->text(), 10);
-        currSingerIndex = index;
-        currLangueIndex = -1;
-        currSonglistIndex = -1;
-    }
+//        currSingerIndex = index;
+//        currLangueIndex = -1;
+//    }
 }
 
 void MainWindow::SelectLanguListWidgetItem(QListWidgetItem *item) {
     int index = LangueOrderWdt->row(item);
+    currSonglistIndex = -1;
     if (index == 6) {
         LangueOrderWdt->hide();
         return;
     }
 
-    if (currLangueIndex != index) {
+//    if (currLangueIndex != index) {
         network->search(item->text(), 10);
-        currLangueIndex = index;
-        currLangueIndex = -1;
-        currSonglistIndex = -1;
+        //currLangueIndex = index;
+        //currLangueIndex = -1;
+//    }
+}
+
+void MainWindow::SelectDayListWidgetItem(QListWidgetItem *item) {
+    int index = DayOrderWdt->row(item);
+    currSonglistIndex = -1;
+    if (index == 3) {
+        DayOrderWdt->hide();
+        return;
     }
+
+    QVector<mst> info;
+    QString Type;
+    if (index == 0) {
+        Type = "dd";
+    }
+    else if (index == 1) {
+        Type = "MM";
+    }
+    else if (index == 2) {
+        Type = "yyyy";
+    }
+    info = sql->SelectLikeMusic(Type);
+    BuildTableSong(info, "");
 }
 
 void MainWindow::ClickedSearchButton() {
@@ -642,6 +700,7 @@ void MainWindow::LoginUser(QString name, QString pwd) {
     if (name.size() == 0 || pwd.size() == 0) return;
     bool res = sql->LoginUser(name, pwd);
     if (res) {
+        if (login->IsRememberMe()) login->JsonWriteInFile(name, pwd);
         OpenWgt("");
         login->ClearLineEditText();
         QString UserName = sql->GetUserName();
@@ -667,7 +726,7 @@ void MainWindow::BuildUserWidget() {
     UserWidget->setRowCount(0);
     QVector<QVector<QString>> UserInfo = sql->GetUserInfo();
     for (int i = 0; i < UserInfo.size(); ++i) {
-        UserWidget ->setRowCount(i + 1);
+        UserWidget->setRowCount(i + 1);
 
         UserWidget->setItem(i,0,new QTableWidgetItem(UserInfo[i][0]));
         UserWidget->item(i,0)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);//文字居中
@@ -773,7 +832,7 @@ void MainWindow::BuildTableSong(QVector<mst> info, QString name) {
     ThisListSong = QList<mst>(info.begin(), info.end());
     TableSong->setRowCount(0);
     for (int i = 0; i < ThisListSong.size(); ++i) {
-        TableSong ->setRowCount(i + 1);
+        TableSong->setRowCount(i + 1);
 
         TableSong->setItem(i,0,new QTableWidgetItem(ThisListSong[i].name));
         TableSong->item(i,0)->setTextAlignment(Qt::AlignHCenter|Qt::AlignVCenter);//文字居中
@@ -819,7 +878,10 @@ void MainWindow::SelectItemOperate(int row, int col) {
         }
     }
     else if (col == 3) {
-        sql->InsertListOfSong(ThisListSong[row], ListofSongWgt->TargetName);
+        int item_x = TableSong->GetMousePos().x() + TableSong->x() + 20, item_y = TableSong->GetMousePos().y() + TableSong->y() + 35;
+        ListofSongWgt->Move(item_x, item_y);
+        ListofSongWgt->raise();
+        ListofSongWgt->SetTargetRow(row);
     }
     else if (col == 7) {
         sql->DeleteMusicInThisList(TableSong->GetClickItemText(), ThisListSong[row]);

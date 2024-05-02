@@ -45,7 +45,7 @@ NewButton::NewButton(const QString Enter, const QString Back, const QString Ente
     this ->setFixedSize(ep.width(), ep.height());
 
     //设置按钮风格
-    this ->setStyleSheet("QPushButton{border: 0px;}");
+    this->setStyleSheet("QPushButton{border: 0px;}");
 }
 
 void NewButton::mousePressEvent(QMouseEvent * e) {
@@ -63,14 +63,12 @@ void NewButton::mousePressEvent(QMouseEvent * e) {
         if(!isEnter) {
             p_c.load(this ->enter2);
             this->setIcon(QIcon(p_c));
-
         } else {
             p_c.load(this ->back2);
             this->setIcon(QIcon(p_c));
         }
 
     }
-
     QPushButton::mousePressEvent(e);
 } // 点击事件转换为新的图片
 

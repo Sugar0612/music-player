@@ -101,6 +101,8 @@ private slots:
 
     void SelectLanguListWidgetItem(QListWidgetItem*);
 
+    void SelectDayListWidgetItem(QListWidgetItem*);
+
     void ClickedSearchButton();
 
     void RegisterUser(QString, QString);
@@ -161,12 +163,12 @@ private:
 
     NewButton *CloseBtn {}, *MinBtn{}, *WinIcon{}, *PlayBtn{}, *FastForBtn{}, *RewindBtn{}, *NextBtn{}, *PrevBtn{}, *VolBtn{};
     NewButton *SearchBtn{}, *AddBtn{};
-    NewButton *MusicListBtn{}, *LrcBtn{};
+    NewButton *MusicListBtn{}, *LrcBtn{}, *LikeBtn{};
     QPushButton *ImgBtn{}, *LoginBtn{};
 
     NewLable *OrderSongLab {}, *SongGroupLab{};
     NewListWidget *OrderSongLW{}, *SongGroupLW{};
-    NewListWidget *SingerOrderWdt{}, *LangueOrderWdt{};
+    NewListWidget *SingerOrderWdt{}, *LangueOrderWdt{}, *DayOrderWdt{};
     SongListWidget *SongListWgt{};
 
     PlayList *ListofSongWgt{};

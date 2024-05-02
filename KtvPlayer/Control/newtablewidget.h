@@ -13,7 +13,11 @@ class NewTableWidget : public QTableWidget
     Q_OBJECT
 public:
     QString GetClickItemText() { return itemText; };
-    void SetClickedItemText(QString name) { itemText = name; }
+    void SetClickedItemText(QString name) {
+        if (name.size() == 0) return;
+        itemText = name;
+    }
+
     NewTableWidget();
     QVector2D GetMousePos() {
         return QVector2D(e_x, e_y);

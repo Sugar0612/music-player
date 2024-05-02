@@ -21,7 +21,15 @@ Sql::Sql() {
     db.setPassword("tsy20010612"); // 密码
     bool res = db.open();  //打开数据库
 
-    if(res) sql = QSqlQuery(db);
+    if(res)
+    {
+        sql = QSqlQuery(db);
+        qDebug() << "sql connect!";
+    }
+    else
+    {
+        qDebug() << "sql not connect!";
+    }
 }
 
 bool Sql::InsertUser(QString id, QString name, QString password) {
@@ -61,6 +69,8 @@ int Sql::GetUserCount() {
 }
 
 bool Sql::LoginUser(QString name, QString password) {
+    if (UserName.size() != 0) return false;
+
     bool res = false;
     QString execStr = "select * from user;";
     qDebug() << "LoginUser()-> " << execStr;
@@ -99,9 +109,18 @@ bool Sql::DeleteUserInfo(QString name) {
     QString execStr = QString("delete from user where name = \"%0\";").arg(name);
     //qDebug() << "" << execStr;
     bool res = sql.exec(execStr);
-    execStr = QString("delete from songlist where name = \"%0\";").arg(name);
+    execStr = QString("delete from songlist where user = \"%0\";").arg(name);
     res = res && sql.exec(execStr);
     sql.clear();
+
+    execStr = QString("delete from songgroups where username = \"%0\";").arg(name);
+    res = res && sql.exec(execStr);
+    sql.clear();
+
+    execStr = QString("delete from listofsong where user = \"%0\";").arg(name);
+    res = res && sql.exec(execStr);
+    sql.clear();
+
     return res;
 }
 
@@ -219,10 +238,13 @@ void Sql::GetPlaysongList() {
 }
 
 bool Sql::InsertListOfSong(mst info, QString ListName) {
-    if(UserName.isEmpty() || ListName.isEmpty() || !CheckListofSong(info, ListName)) return false;
+    if(UserName.isEmpty() || ListName.isEmpty() || !CheckListofSong(info, ListName)) {
+        qDebug() << "insert list error!";
+        return false;
+    }
     QString execStr = QString("insert into listofsong values(\"%0\", \"%1\", \"%2\", \"%3\", \"%4\", \"%5\", \"%6\", \"%7\", \"%8\");").arg(UserName).arg(ListName).arg(info.url)
             .arg(info.name).arg(info.singername).arg(info.album_name).arg(info.time).arg(info.img).arg(info.lrcStr);
-    //qDebug() << "InsertListOfSong()-> " << execStr;
+    qDebug() << "InsertListOfSong()-> " << execStr;
     bool res = sql.exec(execStr);
     sql.clear();
     return res;
@@ -273,6 +295,98 @@ QPair<bool, QString> Sql::GetUserPassword(QString account, QString pwd_md5) {
     sql.clear();
 
     return QPair<bool, QString>(false, "");
+}
+
+void Sql::RequestLikeList(mst info) {
+    qDebug() << "request likelist add: user:=>" << UserName;
+    if (UserName.size() == 0) return;
+
+    QDate date = QDate::currentDate();
+    QString execStr = QString("insert into likelist values(\"%0\", \"%1\", \"%2\", \"%3\", \"%4\", \"%5\", \"%6\", \"%7\", \"%8\");")
+                      .arg(UserName).arg(date.toString("yyyy-MM-dd")).arg(info.url) .arg(info.name).arg(info.singername).arg(info.album_name)
+                      .arg(info.time).arg(info.img).arg(info.lrcStr);
+    //qDebug() << "RequestLikeList()-> " << execStr;
+    bool res = sql.exec(execStr);
+    sql.clear();
+}
+
+void Sql::RequestCancleLikeList(mst info) {
+    qDebug() << "request likelist cancle: user:=>" << UserName;
+    if (UserName.size() == 0) return;
+
+    QString execStr = QString("delete from likelist where user = \"%0\" and url = \"%1\" and name = \"%2\";").arg(UserName).arg(info.url).arg(info.name);
+    sql.exec(execStr);
+    sql.clear();
+    return;
+}
+
+void Sql::checkLikeMusic(mst info) {
+    if (UserName.size() == 0) return;
+    QString execStr = QString("select * from likelist where user = \"%0\" and url = \"%1\" and name = \"%2\";").arg(UserName).arg(info.url).arg(info.name);
+    sql.exec(execStr);
+    while(sql.next()) {
+        if (UserName == sql.value(0).value<QString>() &&
+            info.url == sql.value(2).value<QString>() &&
+            info.name == sql.value(3).value<QString>()) {
+            qDebug() << info.name << " is like music!";
+            emit ThisIsLikeMusic();
+            return;
+        }
+
+    }
+    sql.clear();
+
+    emit ThisNotLikeMusic();
+    return;
+}
+
+QVector<mst> Sql::SelectLikeMusic(QString Type) {
+    QVector<mst> res;
+    QMap<QString, QMap<QString, int>> liver;
+
+    QString execStr = QString("select * from likelist;");
+    sql.exec(execStr);
+
+    QDate localDate = QDate::currentDate();
+    QString YearStr = localDate.toString("yyyy");
+    QString MonthStr = localDate.toString("MM");
+    QString DayStr = localDate.toString("dd");
+    while(sql.next()) {
+        QString time = sql.value(1).toString();
+        QString StrTime = AnalyzeDate(time, Type);
+
+        mst buf;
+        buf.url = sql.value(2).value<QString>();
+        buf.name = sql.value(3).value<QString>();
+        buf.singername = sql.value(4).value<QString>();
+        buf.album_name = sql.value(5).value<QString>();
+        buf.time = sql.value(6).value<QString>();
+        buf.img = sql.value(7).value<QString>();
+        buf.lrcStr = sql.value(8).value<QString>();
+        if((StrTime != YearStr && StrTime != MonthStr && StrTime != DayStr) || liver[buf.name][buf.singername] > 0) continue;
+        res.push_back(buf);
+        liver[buf.name][buf.singername] = 1;
+    }
+    qDebug() << "Clear";
+    sql.clear();
+    return res;
+}
+
+// yyyy-MM-dd
+QString Sql::AnalyzeDate(QString Str, QString Type) {
+    if (Str.isEmpty()) return "";
+
+    int idx = 0;
+    if (Type == "yyyy") idx = 0;
+    if (Type == "MM") idx = 5;
+    if (Type == "dd") idx = 8;
+
+    QString res = "";
+    for (int i = idx; Str[i] != '-' && i < Str.size(); ++i) {
+        res += Str[i];
+    }
+    qDebug() << "AnalyzeDate()->: " << res;
+    return res;
 }
 
 Sql::~Sql() {

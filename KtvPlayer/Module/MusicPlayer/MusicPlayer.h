@@ -15,11 +15,11 @@ class MusicPlayer : public QWidget
     Q_OBJECT
 public:
     MusicPlayer();
-
+    void SetLike(bool blike) { IsLike = blike; }
 private:
     QMediaPlayer *Player;    // 实现多媒体操控
 
-    bool IsPlay = false, IsVolume = true;
+    bool IsPlay = false, IsVolume = true, IsLike = false;
     QTimer *timer;
 
     int currTime = 0;
@@ -32,6 +32,7 @@ public slots:
     bool SetLoadMusic(mst path);
     void SwitchPlayerStatue();
     void SwitchVolumeState();
+    void SwitchLikeState();
 
     void Next();
 
@@ -65,7 +66,6 @@ public slots:
     void PlayerMusic(int idx);
 
     bool SongListEmpty();
-
 public:
 
     void Play();
@@ -76,6 +76,10 @@ public:
 
     void Mute(); // 静音.
 
+    void NotLike(); //取消喜欢
+
+    void Like();
+
     bool PlayTheNextSong(mst path);
 
     int GetCurrMediaIdx() { return currMediaIdx; }
@@ -85,6 +89,8 @@ public:
 signals:
     void ChangedPlayerState(bool);
     void ChangedVolumeState(bool);
+    void ChangedLikeThisMusic(bool);
+
     void MusicTimeout();
     void GetMusicNetImg(QString);
     void GetMusicName(QString);
@@ -95,6 +101,10 @@ signals:
 
     void RequestSqlDeleteMusic(mst);
     void PlayerIsEmpty();
+
+    void AddLike(mst info);
+    void CancleLike(mst info);
+    void IsThisLikeMusic(mst info);
 };
 
 #endif // MUSICPLAYER_H

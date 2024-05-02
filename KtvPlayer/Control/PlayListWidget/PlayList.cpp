@@ -41,7 +41,6 @@ void PlayList::mousePressEvent(QMouseEvent *e) {
     if(e->pos().y() >= 0 && e->pos().y() <= this->height() && e->pos().x() >= 0 && e->pos().x() <= this->width()) {
 
     }
-
     QWidget::mousePressEvent(e);
 }
 
@@ -56,6 +55,5 @@ void PlayList::GetListofSong(QVector<QString> list) {
 
 void PlayList::listofSongItemClicked(QListWidgetItem *item) {
     TargetName = item->text();
-    qDebug() << "choose this listofsong: " << TargetName;
     emit cellClickedItem();
 }
